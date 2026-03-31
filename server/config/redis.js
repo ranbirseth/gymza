@@ -58,10 +58,12 @@ const connectRedis = () => {
       }
     });
 
-    client.connect().catch(() => {
+    client.connect().then(() => {
+      console.log("Redis connected successfully via TLS");
+    }).catch((err) => {
       if (!fallbackEnabled) {
         fallbackEnabled = true;
-        console.warn("Redis unavailable, switching to in-memory cache");
+        console.warn("Redis connection failed, switching to in-memory cache:", err.message);
       }
       if (!(redis instanceof InMemoryRedis)) {
         redis = new InMemoryRedis();
