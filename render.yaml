@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: gymza-saas
+    env: node
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGO_URI
+        fromContext: env
+      - key: REDIS_URL
+        fromContext: env
+      - key: JWT_ACCESS_SECRET
+        fromContext: env
+      - key: JWT_REFRESH_SECRET
+        fromContext: env
+      - key: CLIENT_ORIGIN
+        value: https://gymza-saas.onrender.com # Replace with your actual Render URL after first deploy
+      - key: VITE_API_URL
+        value: /api
