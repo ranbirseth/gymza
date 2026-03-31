@@ -15,15 +15,27 @@ const { startExpiryReminderJob } = require("./jobs/expiryReminder.job");
 
 const path = require("path");
 
+const corsOptions = {
+  origin: (origin, callback) => {
+    const allowedOrigins = (process.env.CLIENT_ORIGIN || "*").split(",");
+    if (!origin || allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
+};
+
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: process.env.CLIENT_ORIGIN || "*", credentials: true } });
+const io = new Server(server, { cors: corsOptions });
 app.locals.io = io;
 
 app.use(helmet({
   contentSecurityPolicy: false, // Disable CSP for easier deployment of client/server on same domain
 }));
-app.use(cors({ origin: process.env.CLIENT_ORIGIN || "*", credentials: true }));
+app.use(cors(corsOptions));
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 app.use(morgan("dev"));
@@ -45,14 +57,17 @@ app.use("/api/bookings", require("./routes/booking.routes"));
 app.use("/api/referrals", require("./routes/referral.routes"));
 
 // Serving client build in production
-if (process.env.NODE_ENV === "production") {
+if (process.env.NODE_ENV === "production" || process.env.RENDER) {
   const clientPath = path.join(__dirname, "../client/dist");
+  console.log("Serving static files from:", clientPath);
   app.use(express.static(clientPath));
   
   app.get("*", (req, res) => {
     if (req.path.startsWith("/api")) return res.status(404).json({ success: false, message: "API route not found" });
     res.sendFile(path.resolve(clientPath, "index.html"));
   });
+} else {
+  app.get("/", (_req, res) => res.send("Gym Management API is running. Start client in dev mode or build for production."));
 }
 
 io.on("connection", (socket) => {
@@ -73,6 +88,9 @@ app.use(errorHandler);
 
 const start = async () => {
   try {
+    console.log("Environment:", process.env.NODE_ENV || "development");
+    console.log("RENDER environment variable:", process.env.RENDER || "false");
+    
     await connectDb();
     console.log("Database connection successful");
     

@@ -19,6 +19,6 @@ services:
       - key: JWT_REFRESH_SECRET
         fromContext: env
       - key: CLIENT_ORIGIN
-        value: https://gymza-saas.onrender.com # Replace with your actual Render URL after first deploy
+        value: "*" # Set this to your Vercel URL after deploy for better security, e.g., https://your-app.vercel.app
       - key: VITE_API_URL
         value: /api
