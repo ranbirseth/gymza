@@ -20,25 +20,39 @@ const path = require("path");
 
 const corsOptions = {
   origin: (origin, callback) => {
-    const allowedOrigins = (process.env.CLIENT_ORIGIN || "*").split(",");
-    if (!origin || allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+    // If no origin (e.g. server-to-server or same origin), allow it
+    if (!origin) return callback(null, true);
+    
+    const clientOrigin = process.env.CLIENT_ORIGIN || "*";
+    if (clientOrigin === "*") return callback(null, true);
+    
+    const allowedOrigins = clientOrigin.split(",").map(o => o.trim());
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.warn(`CORS: Origin ${origin} not allowed. Allowed origins: ${clientOrigin}`);
       callback(new Error("Not allowed by CORS"));
     }
   },
-  credentials: true
+  credentials: true,
+  optionsSuccessStatus: 200 // Some legacy browsers choke on 204
 };
 
 const app = express();
 const server = http.createServer(app);
+
+// CORS must be first for preflight requests
+app.use(cors(corsOptions));
+
+// Handle OPTIONS preflight manually just in case
+app.options("*", cors(corsOptions));
+
 const io = new Server(server, { cors: corsOptions });
 app.locals.io = io;
 
 app.use(helmet({
   contentSecurityPolicy: false, // Disable CSP for easier deployment of client/server on same domain
 }));
-app.use(cors(corsOptions));
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 app.use(morgan("dev"));
