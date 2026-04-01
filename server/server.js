@@ -1,4 +1,5 @@
 require("dotenv").config();
+const User = require("./models/user.model");
 const http = require("http");
 const express = require("express");
 const cors = require("cors");
@@ -8,6 +9,8 @@ const cookieParser = require("cookie-parser");
 const rateLimit = require("express-rate-limit");
 const { Server } = require("socket.io");
 const { connectDb } = require("./config/db");
+const { asyncHandler } = require("./utils/asyncHandler");
+const { seedData } = require("./seeds/seedLogic");
 const { connectRedis } = require("./config/redis");
 const { configureCloudinary } = require("./config/cloudinary");
 const { errorHandler } = require("./middlewares/error.middleware");
@@ -42,7 +45,19 @@ app.use(morgan("dev"));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 300 }));
 
 // API Routes
-app.get("/api/health", (_req, res) => res.json({ success: true, message: "Server healthy", data: {} }));
+app.get("/api/health", asyncHandler(async (_req, res) => {
+  const userCount = await User.countDocuments();
+  const admin = await User.findOne({ email: "admin@gymza.com", gymId: "MAIN" });
+  res.json({ 
+    success: true, 
+    message: "Server healthy", 
+    data: { 
+      totalUsers: userCount, 
+      adminExists: !!admin,
+      gymId: "MAIN"
+    } 
+  });
+}));
 app.use("/api/auth", require("./routes/auth.routes"));
 app.use("/api/members", require("./routes/member.routes"));
 app.use("/api/plans", require("./routes/plan.routes"));
@@ -93,6 +108,9 @@ const start = async () => {
     
     await connectDb();
     console.log("Database connection successful");
+    
+    // Auto-seed if database is empty
+    await seedData();
     
     connectRedis();
     configureCloudinary();
