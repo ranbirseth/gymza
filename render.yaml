@@ -3,8 +3,8 @@ services:
     name: gymza-saas
     env: node
     plan: free
-    buildCommand: npm run build
-    startCommand: npm start
+    buildCommand: npm install && npm install --prefix server
+    startCommand: npm start --prefix server
     envVars:
       - key: NODE_ENV
         value: production
@@ -19,6 +19,6 @@ services:
       - key: JWT_REFRESH_SECRET
         fromContext: env
       - key: CLIENT_ORIGIN
-        value: https://gymza-omega.vercel.app,https://gymza-saas-app.onrender.com
+        value: https://gymza-nine.vercel.app,https://gymza-omega.vercel.app,https://gymza-saas-app.onrender.com
       - key: VITE_API_URL
         value: /api
