@@ -23,10 +23,21 @@
     padding: 2rem 1.5rem;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    justify-content: space-between;
     font-size: 1.5rem;
     font-weight: 800;
     color: var(--clr-primary);
+}
+
+.sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.sidebar-close-btn {
+    display: none;
+    color: var(--clr-text-muted);
 }
 
 .sidebar-header i {
@@ -91,6 +102,70 @@
     background: var(--clr-bg-base);
 }
 
+/* Responsive Styles */
+@media (max-width: 1024px) {
+    .sidebar {
+        position: fixed;
+        left: -260px;
+        transition: left 0.3s ease;
+    }
+
+    .sidebar.open {
+        left: 0;
+    }
+
+    .sidebar-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        z-index: 90;
+    }
+
+    .sidebar-close-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .mobile-menu-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .search-bar {
+        width: 200px;
+    }
+}
+
+@media (max-width: 768px) {
+    .search-bar {
+        display: none;
+    }
+
+    .top-nav {
+        padding: 0 1rem;
+    }
+
+    .nav-right {
+        gap: 0.75rem;
+    }
+
+    .user-info {
+        display: none;
+    }
+
+    .user-profile {
+        padding: 0.4rem;
+    }
+
+    .main-content {
+        padding: 1rem !important;
+    }
+}
+
+
 /* Top Navigation */
 .top-nav {
     height: 70px;
@@ -98,11 +173,22 @@
     justify-content: space-between;
     align-items: center;
     padding: 0 2rem;
+    background: var(--clr-bg-sidebar);
+    border-bottom: 1px solid var(--clr-glass-border);
     position: sticky;
     top: 0;
-    background: rgba(10, 11, 16, 0.8);
-    backdrop-filter: blur(8px);
     z-index: 50;
+}
+
+.nav-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.mobile-menu-btn {
+    display: none;
+    color: var(--clr-text-muted);
 }
 
 .search-bar {

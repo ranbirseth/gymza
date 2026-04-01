@@ -1,20 +1,26 @@
 import React from 'react';
-import { Search, Bell, Moon, Sun } from 'lucide-react';
+import { Search, Bell, Moon, Sun, Menu } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
 
 interface HeaderProps {
   theme: 'dark' | 'light';
   toggleTheme: () => void;
+  toggleSidebar: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ theme, toggleTheme }) => {
+const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, toggleSidebar }) => {
   const { user } = useAuthStore();
 
   return (
     <header className="top-nav">
-      <div className="search-bar">
-        <Search size={18} className="text-muted" />
-        <input type="text" placeholder="Search members, classes..." />
+      <div className="nav-left">
+        <button className="icon-btn mobile-menu-btn" onClick={toggleSidebar}>
+          <Menu size={24} />
+        </button>
+        <div className="search-bar">
+          <Search size={18} className="text-muted" />
+          <input type="text" placeholder="Search members, classes..." />
+        </div>
       </div>
 
       <div className="nav-right">

@@ -10,6 +10,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [theme, setTheme] = useState<'dark' | 'light'>(
     (localStorage.getItem('theme') as 'dark' | 'light') || 'dark'
   );
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -20,18 +21,30 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen(prev => !prev);
+  };
+
   return (
-    <div className="app-layout">
+    <div className={`app-layout ${isSidebarOpen ? 'sidebar-open' : ''}`}>
       <div className="bg-mesh">
         <div className="blob-1"></div>
         <div className="blob-2"></div>
         <div className="blob-3"></div>
       </div>
 
-      <Sidebar />
+      {isSidebarOpen && (
+        <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)}></div>
+      )}
+
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       
       <main className="main-wrapper">
-        <Header theme={theme} toggleTheme={toggleTheme} />
+        <Header 
+          theme={theme} 
+          toggleTheme={toggleTheme} 
+          toggleSidebar={toggleSidebar}
+        />
         <div className="main-content" style={{ padding: '2rem' }}>
           {children}
         </div>

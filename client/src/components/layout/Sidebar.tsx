@@ -9,12 +9,18 @@ import {
   Settings, 
   LogOut,
   Dumbbell,
-  ClipboardList
+  ClipboardList,
+  X
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
 import { logout as logoutApi } from '../../features/auth/auth.api';
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
 
@@ -43,10 +49,15 @@ const Sidebar: React.FC = () => {
   );
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
       <div className="sidebar-header">
-        <Dumbbell className="text-primary" />
-        <span className="text-gradient">Gymza</span>
+        <div className="sidebar-logo">
+          <Dumbbell className="text-primary" />
+          <span className="text-gradient">Gymza</span>
+        </div>
+        <button className="sidebar-close-btn" onClick={onClose}>
+          <X size={24} />
+        </button>
       </div>
 
       <nav className="sidebar-nav">
@@ -55,6 +66,7 @@ const Sidebar: React.FC = () => {
             key={item.path} 
             to={item.path} 
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+            onClick={onClose}
           >
             {item.icon}
             <span>{item.name}</span>
@@ -63,7 +75,7 @@ const Sidebar: React.FC = () => {
       </nav>
 
       <div className="sidebar-footer">
-        <NavLink to="/settings" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+        <NavLink to="/settings" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
           <Settings size={20} />
           <span>Settings</span>
         </NavLink>
