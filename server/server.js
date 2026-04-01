@@ -26,7 +26,8 @@ const corsOptions = {
     const clientOrigin = process.env.CLIENT_ORIGIN || "*";
     if (clientOrigin === "*") return callback(null, true);
     
-    const allowedOrigins = clientOrigin.split(",").map(o => o.trim());
+    // Split, trim, and also remove trailing slashes for better resilience
+    const allowedOrigins = clientOrigin.split(",").map(o => o.trim().replace(/\/$/, ""));
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
