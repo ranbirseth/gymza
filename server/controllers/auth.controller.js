@@ -23,9 +23,28 @@ const sanitizeUser = (user) => ({
   photo: user.photo
 });
 
+const Member = require("../models/member.model");
+
 const signup = asyncHandler(async (req, res) => {
   const { gymId, name, email, phone, password, role = "member" } = req.body;
-  const user = await User.create({ gymId, name, email, phone, password, role });
+  
+  // Ensure role is valid
+  const allowedRoles = ["admin", "trainer", "member"];
+  const finalRole = allowedRoles.includes(role) ? role : "member";
+
+  const user = await User.create({ gymId, name, email, phone, password, role: finalRole });
+  
+  // If signing up as a member, also create the Member profile with pending status
+  if (finalRole === "member") {
+    await Member.create({
+      gymId,
+      user: user._id,
+      branchCode: "MAIN",
+      isActivePlan: false,
+      status: "pending"
+    });
+  }
+
   const tokens = toTokens(user);
   user.refreshTokens.push(tokens.refreshToken);
   await user.save();
@@ -41,12 +60,26 @@ const signup = asyncHandler(async (req, res) => {
 });
 
 const login = asyncHandler(async (req, res) => {
-  const { gymId, email, password } = req.body;
-  const user = await User.findOne({ gymId, email });
+  const { gymId, email, password, role } = req.body;
+  const query = { gymId, email };
+  if (role) query.role = role;
+
+  const user = await User.findOne(query);
   if (!user || !(await user.comparePassword(password))) {
     throw new AppError("Invalid credentials", 401, "INVALID_CREDENTIALS");
   }
   
+  // If user is a member, check approval status
+  if (user.role === "member") {
+    const member = await Member.findOne({ user: user._id });
+    if (member && member.status === "pending") {
+      throw new AppError("Login request sent to admin. Please wait for access.", 403, "APPROVAL_PENDING");
+    }
+    if (member && member.status === "inactive") {
+      throw new AppError("Your account is inactive. Please contact admin.", 403, "ACCOUNT_INACTIVE");
+    }
+  }
+
   const tokens = toTokens(user);
   user.refreshTokens.push(tokens.refreshToken);
   await user.save();

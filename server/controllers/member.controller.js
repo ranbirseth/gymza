@@ -42,15 +42,41 @@ const createMember = asyncHandler(async (req, res) => {
 const fetchMembers = async (query, gymId) => {
   const { skip, limit, page } = getPagination(query);
   const branchFilter = query.branchCode ? { branchCode: query.branchCode, gymId } : { gymId };
+  
+  // Status filter logic
+  if (query.status && query.status !== "all") {
+    branchFilter.status = query.status;
+  }
+
   const q = query.search
     ? { $or: [{ "userDoc.name": new RegExp(query.search, "i") }, { "userDoc.email": new RegExp(query.search, "i") }] }
     : {};
   const baseLookup = [
     { $lookup: { from: "users", localField: "user", foreignField: "_id", as: "userDoc" } },
-    { $unwind: "$userDoc" }
+    { $unwind: "$userDoc" },
+    { $lookup: { from: "users", localField: "trainer", foreignField: "_id", as: "trainerDoc" } },
+    { $lookup: { from: "plans", localField: "currentPlan", foreignField: "_id", as: "planDoc" } }
   ];
   const filterStages = [{ $match: branchFilter }, ...(Object.keys(q).length ? [{ $match: q }] : [])];
-  const pipeline = [...baseLookup, ...filterStages, { $sort: { createdAt: -1 } }, { $skip: skip }, { $limit: limit }];
+  const pipeline = [
+    ...baseLookup, 
+    ...filterStages, 
+    { $sort: { createdAt: -1 } }, 
+    { $skip: skip }, 
+    { $limit: limit },
+    {
+      $project: {
+        _id: 1,
+        gymId: 1,
+        isActivePlan: 1,
+        membershipExpiryDate: 1,
+        createdAt: 1,
+        user: "$userDoc",
+        trainer: { $arrayElemAt: ["$trainerDoc", 0] },
+        currentPlan: { $arrayElemAt: ["$planDoc", 0] }
+      }
+    }
+  ];
   const [items, totalObj] = await Promise.all([
     Member.aggregate(pipeline),
     Member.aggregate([...baseLookup, ...filterStages, { $count: "count" }])
@@ -77,11 +103,16 @@ const getMember = asyncHandler(async (req, res) => {
 const updateMember = asyncHandler(async (req, res) => {
   const member = await Member.findOne({ _id: req.params.id, gymId: req.gymId });
   if (!member) throw Object.assign(new Error("Member not found in your gym"), { statusCode: 404 });
-  const { name, phone, email, ...memberPayload } = req.body;
+  const { name, phone, email, password, ...memberPayload } = req.body;
   const photo = req.file ? `/uploads/${req.file.filename}` : undefined;
   
-  if (name || phone || email || photo) {
-    await User.findByIdAndUpdate(member.user, { ...(name && { name }), ...(phone && { phone }), ...(email && { email }), ...(photo && { photo }) });
+  if (name || phone || email || photo || password) {
+    const userUpdate = { ...(name && { name }), ...(phone && { phone }), ...(email && { email }), ...(photo && { photo }), ...(password && { password }) };
+    const user = await User.findById(member.user);
+    if (user) {
+      Object.assign(user, userUpdate);
+      await user.save(); // Using save() instead of findByIdAndUpdate to trigger password hashing middleware
+    }
   }
   Object.assign(member, memberPayload);
   await member.save();

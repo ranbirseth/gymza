@@ -1,29 +1,38 @@
 import React, { FormEvent, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { login } from "../features/auth/auth.api";
+import { signup } from "../features/auth/auth.api";
 import { useAuthStore } from "../store/auth.store";
-import { Dumbbell, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Dumbbell, Mail, Lock, User, Phone, Eye, EyeOff } from "lucide-react";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const navigate = useNavigate();
-  const { setAuth, gymId, setGymId } = useAuthStore();
-  const [email, setEmail] = useState("admin@gymza.com");
-  const [password, setPassword] = useState("Password123");
-  const [role, setRole] = useState("member");
+  const { setAuth } = useAuthStore();
+  const [formData, setFormData] = useState({
+    gymId: "MAIN",
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+    role: "member" as const
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      const { data } = await login({ gymId, email, password, role });
+      const { data } = await signup(formData);
       setAuth(data.data.user, data.data.accessToken);
       navigate("/");
     } catch (err: any) {
-      setError(err.response?.data?.message || "Invalid login credentials");
+      setError(err.response?.data?.message || "Signup failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -50,23 +59,23 @@ export default function LoginPage() {
         padding: '3rem',
         zIndex: 1
       }}>
-        <div className="glass-card" style={{ padding: '3rem' }}>
-          <div className="text-center" style={{ marginBottom: '2.5rem' }}>
+        <div className="glass-card" style={{ padding: '2rem' }}>
+          <div className="text-center" style={{ marginBottom: '2rem' }}>
             <div style={{ 
               display: 'inline-flex', 
               alignItems: 'center', 
               justifyContent: 'center',
-              width: '60px',
-              height: '60px',
-              borderRadius: '16px',
+              width: '50px',
+              height: '50px',
+              borderRadius: '12px',
               background: 'var(--clr-accent-gradient)',
               marginBottom: '1rem',
               color: 'white'
             }}>
-              <Dumbbell size={32} />
+              <Dumbbell size={28} />
             </div>
-            <h1 style={{ fontSize: '2rem', fontWeight: '800' }}>Gymza</h1>
-            <p className="text-muted">Sign in to your account</p>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: '800' }}>Create Account</h1>
+            <p className="text-muted">Join the Gymza community</p>
           </div>
 
           <form onSubmit={submit}>
@@ -86,37 +95,40 @@ export default function LoginPage() {
 
             <div className="form-group">
               <label className="form-label">Gym ID</label>
-              <div style={{ position: 'relative' }}>
-                <input 
-                  className="form-input"
-                  value={gymId} 
-                  onChange={(e) => setGymId(e.target.value)} 
-                  placeholder="Enter Gym ID" 
-                />
-              </div>
+              <input 
+                name="gymId"
+                className="form-input"
+                value={formData.gymId} 
+                onChange={handleChange} 
+                placeholder="Enter Gym ID" 
+                required
+              />
             </div>
 
             <div className="form-group">
-              <label className="form-label">Email Address</label>
+              <label className="form-label">Full Name</label>
               <div style={{ position: 'relative' }}>
-                <Mail size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--clr-text-muted)' }} />
+                <User size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--clr-text-muted)' }} />
                 <input 
+                  name="name"
                   className="form-input"
                   style={{ paddingLeft: '3rem' }}
-                  type="email"
-                  value={email} 
-                  onChange={(e) => setEmail(e.target.value)} 
-                  placeholder="admin@gymza.com" 
+                  value={formData.name} 
+                  onChange={handleChange} 
+                  placeholder="John Doe" 
+                  required
                 />
               </div>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Sign in as</label>
+              <label className="form-label">Sign up as</label>
               <select 
+                name="role"
                 className="form-input"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
+                value={formData.role}
+                onChange={handleChange}
+                required
               >
                 <option value="member">Member</option>
                 <option value="trainer">Trainer</option>
@@ -125,16 +137,50 @@ export default function LoginPage() {
             </div>
 
             <div className="form-group">
+              <label className="form-label">Email Address</label>
+              <div style={{ position: 'relative' }}>
+                <Mail size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--clr-text-muted)' }} />
+                <input 
+                  name="email"
+                  className="form-input"
+                  style={{ paddingLeft: '3rem' }}
+                  type="email"
+                  value={formData.email} 
+                  onChange={handleChange} 
+                  placeholder="john@example.com" 
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Phone Number</label>
+              <div style={{ position: 'relative' }}>
+                <Phone size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--clr-text-muted)' }} />
+                <input 
+                  name="phone"
+                  className="form-input"
+                  style={{ paddingLeft: '3rem' }}
+                  value={formData.phone} 
+                  onChange={handleChange} 
+                  placeholder="1234567890" 
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
               <label className="form-label">Password</label>
               <div style={{ position: 'relative' }}>
                 <Lock size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--clr-text-muted)' }} />
                 <input 
+                  name="password"
                   className="form-input"
                   style={{ paddingLeft: '3rem', paddingRight: '3rem' }}
                   type={showPassword ? "text" : "password"}
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)} 
+                  value={formData.password} 
+                  onChange={handleChange} 
                   placeholder="••••••••" 
+                  required
                 />
                 <button 
                   type="button"
@@ -146,34 +192,26 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}>
-                <input type="checkbox" style={{ accentColor: 'var(--clr-primary)' }} />
-                <span>Remember me</span>
-              </label>
-              <a href="#" style={{ fontSize: '0.85rem', color: 'var(--clr-primary)', fontWeight: '600' }}>Forgot Password?</a>
-            </div>
-
             <button 
               type="submit" 
               className="btn btn-primary w-full" 
-              style={{ padding: '0.875rem' }}
+              style={{ padding: '0.875rem', marginTop: '1rem' }}
               disabled={loading}
             >
-              {loading ? 'Signing In...' : 'Sign In'}
+              {loading ? 'Creating Account...' : 'Sign Up'}
             </button>
           </form>
 
-          <div className="text-center" style={{ marginTop: '2rem' }}>
+          <div className="text-center" style={{ marginTop: '1.5rem' }}>
             <p className="text-muted" style={{ fontSize: '0.9rem' }}>
-              Don't have an account? <Link to="/signup" style={{ color: 'var(--clr-primary)', fontWeight: '600' }}>Sign up</Link>
+              Already have an account? <Link to="/login" style={{ color: 'var(--clr-primary)', fontWeight: '600' }}>Sign in</Link>
             </p>
           </div>
         </div>
       </div>
 
       <div className="login-right" style={{ flex: 1, position: 'relative' }}>
-        {/* Right side background image or illustration could go here */}
+        {/* Right side decoration */}
       </div>
     </div>
   );

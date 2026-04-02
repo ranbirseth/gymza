@@ -9,6 +9,7 @@ const memberSchema = new mongoose.Schema(
     membershipStartDate: Date,
     membershipExpiryDate: { type: Date, index: true },
     isActivePlan: { type: Boolean, default: false, index: true },
+    status: { type: String, enum: ["pending", "active", "inactive"], default: "pending", index: true },
     branchCode: { type: String, default: "MAIN", index: true }
   },
   { timestamps: true }

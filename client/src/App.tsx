@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppLayout from "./components/layout/AppLayout";
+import { useAuthStore } from "./store/auth.store";
 
 // Import styles directly in App.tsx to ensure they are loaded
 import "./styles/variables.css";
@@ -10,6 +11,7 @@ import "./styles/layout.css";
 import "./styles/components.css";
 
 const LoginPage = lazy(() => import("./pages/LoginPage"));
+const SignupPage = lazy(() => import("./pages/SignupPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const MembersPage = lazy(() => import("./pages/MembersPage"));
 const TrainersPage = lazy(() => import("./pages/TrainersPage"));
@@ -20,7 +22,9 @@ const PaymentsPage = lazy(() => import("./pages/PaymentsPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 
-export default function App() {
+function App() {
+  const { user } = useAuthStore();
+
   return (
     <BrowserRouter 
       future={{ 
@@ -28,16 +32,25 @@ export default function App() {
         v7_relativeSplatPath: true 
       }}
     >
-      <Suspense fallback={<div className="loading-screen">Loading...</div>}>
+      <Suspense fallback={<div className="loading-screen" style={{ 
+        height: '100vh', 
+        width: '100vw', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        background: '#0a0b10',
+        color: '#ffffff'
+      }}>Loading...</div>}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
           
           <Route
             path="/"
             element={
-              <ProtectedRoute roles={["admin", "trainer"]}>
+              <ProtectedRoute roles={["admin", "trainer", "member"]}>
                 <AppLayout>
-                  <DashboardPage />
+                  {user?.role === "member" ? <Navigate to="/workouts" replace /> : <DashboardPage />}
                 </AppLayout>
               </ProtectedRoute>
             }
@@ -137,3 +150,5 @@ export default function App() {
     </BrowserRouter>
   );
 }
+
+export default App;
