@@ -6,7 +6,7 @@ import { Dumbbell, Mail, Lock, User, Phone, Eye, EyeOff } from "lucide-react";
 
 export default function SignupPage() {
   const navigate = useNavigate();
-  const { setAuth } = useAuthStore();
+  const { setAuth, user } = useAuthStore();
   const [formData, setFormData] = useState({
     gymId: "MAIN",
     name: "",
@@ -15,6 +15,22 @@ export default function SignupPage() {
     password: "",
     role: "member" as const
   });
+
+  React.useEffect(() => {
+    if (user) {
+      if (user.role === "member") {
+        if (user.status === "pending") {
+          navigate("/pending-approval");
+        } else if (user.status === "inactive") {
+          navigate("/account-inactive");
+        } else {
+          navigate("/");
+        }
+      } else {
+        navigate("/");
+      }
+    }
+  }, [user, navigate]);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,8 +45,20 @@ export default function SignupPage() {
     setLoading(true);
     try {
       const { data } = await signup(formData);
-      setAuth(data.data.user, data.data.accessToken);
-      navigate("/");
+      const userData = data.data.user;
+      setAuth(userData, data.data.accessToken);
+
+      if (userData.role === "member") {
+        if (userData.status === "pending") {
+          navigate("/pending-approval");
+        } else if (userData.status === "inactive") {
+          navigate("/account-inactive");
+        } else {
+          navigate("/");
+        }
+      } else {
+        navigate("/");
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || "Signup failed. Please try again.");
     } finally {

@@ -6,7 +6,7 @@ import { Dumbbell, Mail, Lock, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { setAuth, gymId, setGymId } = useAuthStore();
+  const { setAuth, gymId, setGymId, user } = useAuthStore();
   const [email, setEmail] = useState("admin@gymza.com");
   const [password, setPassword] = useState("Password123");
   const [role, setRole] = useState("member");
@@ -14,14 +14,42 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  React.useEffect(() => {
+    if (user) {
+      if (user.role === "member") {
+        if (user.status === "pending") {
+          navigate("/pending-approval");
+        } else if (user.status === "inactive") {
+          navigate("/account-inactive");
+        } else {
+          navigate("/");
+        }
+      } else {
+        navigate("/");
+      }
+    }
+  }, [user, navigate]);
+
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
       const { data } = await login({ gymId, email, password, role });
-      setAuth(data.data.user, data.data.accessToken);
-      navigate("/");
+      const userData = data.data.user;
+      setAuth(userData, data.data.accessToken);
+      
+      if (userData.role === "member") {
+        if (userData.status === "pending") {
+          navigate("/pending-approval");
+        } else if (userData.status === "inactive") {
+          navigate("/account-inactive");
+        } else {
+          navigate("/");
+        }
+      } else {
+        navigate("/");
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || "Invalid login credentials");
     } finally {

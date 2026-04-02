@@ -18,8 +18,28 @@ const createTrainer = asyncHandler(async (req, res) => {
   sendResponse(res, {
     status: 201,
     message: "Trainer created",
-    data: { _id: trainer._id, name: trainer.name, email: trainer.email, phone: trainer.phone, role: trainer.role }
+    data: { _id: trainer._id, name: trainer.name, email: trainer.email, phone: trainer.phone, role: trainer.role, specialty: trainer.specialty, status: trainer.status }
   });
 });
 
-module.exports = { listTrainers, createTrainer };
+const updateTrainer = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const trainer = await User.findOneAndUpdate(
+    { _id: id, gymId: req.gymId, role: "trainer" },
+    { $set: req.body },
+    { new: true, runValidators: true }
+  ).select("-password -refreshTokens");
+  
+  if (!trainer) throw Object.assign(new Error("Trainer not found"), { statusCode: 404 });
+  
+  sendResponse(res, { message: "Trainer updated", data: trainer });
+});
+
+const deleteTrainer = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const trainer = await User.findOneAndDelete({ _id: id, gymId: req.gymId, role: "trainer" });
+  if (!trainer) throw Object.assign(new Error("Trainer not found"), { statusCode: 404 });
+  sendResponse(res, { message: "Trainer deleted" });
+});
+
+module.exports = { listTrainers, createTrainer, updateTrainer, deleteTrainer };

@@ -1,16 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import { useAuthStore } from '../../store/auth.store';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { getMyProfile } from '../../features/members/members.api';
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
+  const { user, setUser } = useAuthStore();
+  const navigate = useNavigate();
   const [theme, setTheme] = useState<'dark' | 'light'>(
     (localStorage.getItem('theme') as 'dark' | 'light') || 'dark'
   );
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Background check for status changes (especially for members)
+  useEffect(() => {
+    if (user?.role === "member") {
+      const interval = setInterval(async () => {
+        try {
+          const { data } = await getMyProfile();
+          const updatedStatus = data.data?.status;
+          if (updatedStatus && updatedStatus !== user.status) {
+            setUser({ ...user, status: updatedStatus });
+            if (updatedStatus === "inactive") {
+              navigate("/account-inactive");
+            } else if (updatedStatus === "pending") {
+              navigate("/pending-approval");
+            }
+          }
+        } catch (error) {
+          console.error("Background status check error:", error);
+        }
+      }, 5000); 
+      return () => clearInterval(interval);
+    }
+  }, [user, setUser, navigate]);
+
+  // Additional layer of security for members
+  if (user?.role === "member") {
+    if (user.status === "pending") {
+      return <Navigate to="/pending-approval" replace />;
+    }
+    if (user.status === "inactive") {
+      return <Navigate to="/account-inactive" replace />;
+    }
+  }
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);

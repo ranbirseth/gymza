@@ -21,6 +21,8 @@ const WorkoutsPage = lazy(() => import("./pages/WorkoutsPage"));
 const PaymentsPage = lazy(() => import("./pages/PaymentsPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const PendingApprovalPage = lazy(() => import("./pages/PendingApprovalPage"));
+const DiscardedPage = lazy(() => import("./pages/DiscardedPage"));
 
 function App() {
   const { user } = useAuthStore();
@@ -44,6 +46,8 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/pending-approval" element={<PendingApprovalPage />} />
+          <Route path="/account-inactive" element={<DiscardedPage />} />
           
           <Route
             path="/"

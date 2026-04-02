@@ -10,6 +10,8 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true, minlength: 6 },
     role: { type: String, enum: ["superadmin", "admin", "trainer", "member"], default: "member", index: true },
     photo: String,
+    status: { type: String, enum: ["pending", "active", "inactive"], default: "active", index: true },
+    specialty: { type: String, trim: true },
     refreshTokens: [{ type: String }]
   },
   { timestamps: true }
