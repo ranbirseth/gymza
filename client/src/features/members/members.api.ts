@@ -11,8 +11,14 @@ export const updateMember = (id: string, payload: Record<string, unknown>) => ht
 export const deleteMember = (id: string) => http.delete(`/members/${id}`);
 export const searchMembers = (q: string, page = 1, limit = 10) =>
   http.get(`/members/search?q=${encodeURIComponent(q)}&page=${page}&limit=${limit}`);
-export const assignPlanToMember = (memberId: string, payload: { planId: string; membershipStartDate?: string }) =>
-  http.patch(`/members/${memberId}/assign-plan`, payload);
+export const assignPlan = (id: string, payload: { planId: string; membershipStartDate?: string }) =>
+  http.patch(`/members/${id}/assign-plan`, payload);
+export const renewPlan = (id: string, payload: { planId?: string }) => http.patch(`/members/${id}/renew-plan`, payload);
+export const upgradePlan = (id: string, payload: { planId: string }) => http.patch(`/members/${id}/upgrade-plan`, payload);
+export const cancelPlan = (id: string) => http.patch(`/members/${id}/cancel-plan`);
+export const freezePlan = (id: string) => http.patch(`/members/${id}/freeze-plan`);
+export const resumePlan = (id: string) => http.patch(`/members/${id}/resume-plan`);
+export const approveMember = (id: string) => http.patch(`/members/${id}/approve`);
 export const getMyProfile = () => http.get("/members/profile/me");
 export const updateMyProfile = (payload: { name?: string; phone?: string; email?: string; photo?: string }) =>
   http.patch("/members/profile/me", payload);

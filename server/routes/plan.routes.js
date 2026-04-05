@@ -5,7 +5,7 @@ const { createPlan, listPlans, updatePlan, deletePlan } = require("../controller
 router.use(protect);
 router.get("/", listPlans);
 router.post("/", authorize("admin"), createPlan);
-router.put("/:id", authorize("admin"), updatePlan);
+router.patch("/:id", authorize("admin"), updatePlan);
 router.delete("/:id", authorize("admin"), deletePlan);
 
 module.exports = router;

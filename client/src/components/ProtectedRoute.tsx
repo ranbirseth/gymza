@@ -5,19 +5,20 @@ import { useAuthStore } from "../store/auth.store";
 type Props = { children: ReactNode; roles?: Array<"admin" | "trainer" | "member"> };
 
 export default function ProtectedRoute({ children, roles }: Props) {
-  const { user, accessToken, logout } = useAuthStore();
+  const { user, accessToken } = useAuthStore();
   
   if (!accessToken || !user) return <Navigate to="/login" replace />;
   
-  // Strict check for members: only "active" status allowed
+  // Strict check for members: redirection to specific status pages
   if (user.role === "member") {
     if (user.status === "pending") {
       return <Navigate to="/pending-approval" replace />;
     }
     if (user.status === "inactive") {
-      // Don't logout here because it will cause infinite redirect to login
-      // AppLayout will handle the logout and redirect
       return <Navigate to="/account-inactive" replace />;
+    }
+    if (user.status === "expired" || user.status === "frozen" || user.paymentStatus === "pending") {
+      return <Navigate to="/access-restricted" replace />;
     }
   }
   

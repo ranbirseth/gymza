@@ -4,8 +4,8 @@ const planSchema = new mongoose.Schema(
   {
     gymId: { type: String, required: true, index: true },
     name: { type: String, required: true, trim: true },
-    durationType: { type: String, enum: ["monthly", "yearly"], required: true },
     price: { type: Number, required: true, min: 0 },
+    duration: { type: Number, required: true, min: 1 }, // Duration in days
     features: [{ type: String }]
   },
   { timestamps: true }

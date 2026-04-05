@@ -6,7 +6,8 @@ type User = {
   name: string; 
   email: string; 
   role: "admin" | "trainer" | "member";
-  status: "active" | "pending" | "inactive";
+  status: "active" | "pending" | "inactive" | "expired" | "cancelled" | "frozen";
+  paymentStatus: "paid" | "pending";
 } | null;
 
 type AuthState = {

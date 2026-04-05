@@ -5,10 +5,14 @@ const { asyncHandler } = require("../utils/asyncHandler");
 const { sendResponse } = require("../utils/response");
 const { getPagination } = require("../utils/pagination");
 
-const calculateExpiry = (startDate, durationType) => {
+const calculateExpiry = (startDate, durationDays) => {
   const expiry = new Date(startDate);
-  expiry.setMonth(expiry.getMonth() + (durationType === "monthly" ? 1 : 12));
+  expiry.setDate(expiry.getDate() + parseInt(durationDays));
   return expiry;
+};
+
+const isPlanActive = (expiryDate, paymentStatus) => {
+  return paymentStatus === "paid" && new Date() < new Date(expiryDate);
 };
 
 const createMember = asyncHandler(async (req, res) => {
@@ -19,11 +23,12 @@ const createMember = asyncHandler(async (req, res) => {
   const user = await User.create({ gymId, name, email, phone, password, role: "member", photo });
   
   let membershipExpiryDate = null;
+  let status = "pending";
   if (planId) {
     const plan = await Plan.findOne({ _id: planId, gymId });
     const start = membershipStartDate ? new Date(membershipStartDate) : new Date();
     if (plan) {
-      membershipExpiryDate = calculateExpiry(start, plan.durationType);
+      membershipExpiryDate = calculateExpiry(start, plan.duration);
     }
   }
   const member = await Member.create({
@@ -33,7 +38,9 @@ const createMember = asyncHandler(async (req, res) => {
     currentPlan: planId || null,
     membershipStartDate: membershipStartDate || new Date(),
     membershipExpiryDate,
-    isActivePlan: Boolean(planId),
+    isActivePlan: false, // Becomes active only after payment
+    status: "pending",
+    paymentStatus: "pending",
     branchCode
   });
   sendResponse(res, { status: 201, message: "Member created", data: member });
@@ -70,6 +77,8 @@ const fetchMembers = async (query, gymId) => {
         gymId: 1,
         isActivePlan: 1,
         membershipExpiryDate: 1,
+        status: 1,
+        paymentStatus: 1,
         createdAt: 1,
         user: "$userDoc",
         trainer: { $arrayElemAt: ["$trainerDoc", 0] },
@@ -135,10 +144,101 @@ const assignPlan = asyncHandler(async (req, res) => {
   const startDate = membershipStartDate ? new Date(membershipStartDate) : new Date();
   member.currentPlan = plan._id;
   member.membershipStartDate = startDate;
-  member.membershipExpiryDate = calculateExpiry(startDate, plan.durationType);
-  member.isActivePlan = true;
+  member.membershipExpiryDate = calculateExpiry(startDate, plan.duration);
+  member.isActivePlan = false; // Requires payment to become active
+  member.paymentStatus = "pending";
+  member.status = "pending";
   await member.save();
-  sendResponse(res, { message: "Plan assigned to member", data: member });
+  sendResponse(res, { message: "Plan assigned to member. Awaiting payment.", data: member });
+});
+
+const renewPlan = asyncHandler(async (req, res) => {
+  const { planId } = req.body;
+  const member = await Member.findOne({ _id: req.params.id, gymId: req.gymId });
+  if (!member) throw Object.assign(new Error("Member not found in your gym"), { statusCode: 404 });
+  
+  const plan = await Plan.findOne({ _id: planId || member.currentPlan, gymId: req.gymId });
+  if (!plan) throw Object.assign(new Error("Plan not found"), { statusCode: 404 });
+
+  // If active, extend from current expiry. If expired, start from today.
+  const isCurrentlyActive = member.status === "active" && member.membershipExpiryDate && new Date() < new Date(member.membershipExpiryDate);
+  const startDate = isCurrentlyActive ? new Date(member.membershipExpiryDate) : new Date();
+  
+  member.membershipStartDate = startDate;
+  member.membershipExpiryDate = calculateExpiry(startDate, plan.duration);
+  member.currentPlan = plan._id;
+  member.paymentStatus = "pending";
+  member.status = "pending";
+  member.isActivePlan = false;
+  
+  await member.save();
+  sendResponse(res, { message: "Plan renewed. Awaiting payment.", data: member });
+});
+
+const upgradePlan = asyncHandler(async (req, res) => {
+  const { planId } = req.body;
+  const member = await Member.findOne({ _id: req.params.id, gymId: req.gymId });
+  if (!member) throw Object.assign(new Error("Member not found"), { statusCode: 404 });
+  
+  const plan = await Plan.findOne({ _id: planId, gymId: req.gymId });
+  if (!plan) throw Object.assign(new Error("Plan not found"), { statusCode: 404 });
+
+  // Upgrading usually starts from today
+  const startDate = new Date();
+  member.membershipStartDate = startDate;
+  member.membershipExpiryDate = calculateExpiry(startDate, plan.duration);
+  member.currentPlan = plan._id;
+  member.paymentStatus = "pending";
+  member.status = "pending";
+  member.isActivePlan = false;
+
+  await member.save();
+  sendResponse(res, { message: "Plan upgraded. Awaiting payment.", data: member });
+});
+
+const cancelPlan = asyncHandler(async (req, res) => {
+  const member = await Member.findOne({ _id: req.params.id, gymId: req.gymId });
+  if (!member) throw Object.assign(new Error("Member not found"), { statusCode: 404 });
+  
+  member.status = "cancelled";
+  member.isActivePlan = false;
+  await member.save();
+  sendResponse(res, { message: "Subscription cancelled", data: member });
+});
+
+const freezePlan = asyncHandler(async (req, res) => {
+  const member = await Member.findOne({ _id: req.params.id, gymId: req.gymId });
+  if (!member || member.status !== "active") throw Object.assign(new Error("Only active members can freeze plans"), { statusCode: 400 });
+  
+  const now = new Date();
+  const expiry = new Date(member.membershipExpiryDate);
+  const diffTime = expiry - now;
+  const remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (remainingDays <= 0) throw Object.assign(new Error("Cannot freeze an expired plan"), { statusCode: 400 });
+  
+  member.status = "frozen";
+  member.isActivePlan = false;
+  member.frozenAt = now;
+  member.remainingDays = remainingDays;
+  await member.save();
+  
+  sendResponse(res, { message: "Plan frozen successfully", data: member });
+});
+
+const resumePlan = asyncHandler(async (req, res) => {
+  const member = await Member.findOne({ _id: req.params.id, gymId: req.gymId });
+  if (!member || member.status !== "frozen") throw Object.assign(new Error("Only frozen plans can be resumed"), { statusCode: 400 });
+  
+  const now = new Date();
+  member.status = "active";
+  member.isActivePlan = true;
+  member.membershipExpiryDate = calculateExpiry(now, member.remainingDays);
+  member.frozenAt = null;
+  member.remainingDays = null;
+  await member.save();
+  
+  sendResponse(res, { message: "Plan resumed successfully", data: member });
 });
 
 const getMyProfile = asyncHandler(async (req, res) => {
@@ -158,4 +258,33 @@ const updateMyProfile = asyncHandler(async (req, res) => {
   sendResponse(res, { message: "Profile updated", data: member });
 });
 
-module.exports = { createMember, listMembers, searchMembers, getMember, updateMember, deleteMember, assignPlan, getMyProfile, updateMyProfile };
+const approveMember = asyncHandler(async (req, res) => {
+  const member = await Member.findOne({ _id: req.params.id, gymId: req.gymId });
+  if (!member) throw Object.assign(new Error("Member not found"), { statusCode: 404 });
+  
+  member.status = "active";
+  await member.save();
+
+  // Also ensure User document is active (though it defaults to active)
+  await User.findByIdAndUpdate(member.user, { status: "active" });
+  
+  sendResponse(res, { message: "Member approved successfully", data: member });
+});
+
+module.exports = { 
+  createMember, 
+  listMembers, 
+  searchMembers, 
+  getMember, 
+  updateMember, 
+  deleteMember, 
+  assignPlan, 
+  renewPlan,
+  upgradePlan,
+  cancelPlan,
+  freezePlan,
+  resumePlan,
+  approveMember,
+  getMyProfile, 
+  updateMyProfile 
+};

@@ -13,14 +13,16 @@ const toTokens = (user) => {
   };
 };
 
-const sanitizeUser = (user) => ({
+const sanitizeUser = (user, member = null) => ({
   _id: user._id,
   gymId: user.gymId,
   name: user.name,
   email: user.email,
   phone: user.phone,
   role: user.role,
-  photo: user.photo
+  photo: user.photo,
+  status: member ? member.status : user.status,
+  paymentStatus: member ? member.paymentStatus : "paid" // Admins/Trainers are always "paid"
 });
 
 const Member = require("../models/member.model");
@@ -34,9 +36,10 @@ const signup = asyncHandler(async (req, res) => {
 
   const user = await User.create({ gymId, name, email, phone, password, role: finalRole });
   
+  let member = null;
   // If signing up as a member, also create the Member profile with pending status
   if (finalRole === "member") {
-    await Member.create({
+    member = await Member.create({
       gymId,
       user: user._id,
       branchCode: "MAIN",
@@ -56,7 +59,7 @@ const signup = asyncHandler(async (req, res) => {
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   });
 
-  sendResponse(res, { status: 201, message: "Signup successful", data: { user: sanitizeUser(user), accessToken: tokens.accessToken } });
+  sendResponse(res, { status: 201, message: "Signup successful", data: { user: sanitizeUser(user, member), accessToken: tokens.accessToken } });
 });
 
 const login = asyncHandler(async (req, res) => {
@@ -69,12 +72,10 @@ const login = asyncHandler(async (req, res) => {
     throw new AppError("Invalid credentials", 401, "INVALID_CREDENTIALS");
   }
   
+  let member = null;
   // If user is a member, check approval status
   if (user.role === "member") {
-    const member = await Member.findOne({ user: user._id });
-    if (member && member.status === "pending") {
-      throw new AppError("Login request sent to admin. Please wait for access.", 403, "APPROVAL_PENDING");
-    }
+    member = await Member.findOne({ user: user._id });
     if (member && member.status === "inactive") {
       throw new AppError("Your account is inactive. Please contact admin.", 403, "ACCOUNT_INACTIVE");
     }
@@ -91,7 +92,7 @@ const login = asyncHandler(async (req, res) => {
     maxAge: 7 * 24 * 60 * 60 * 1000
   });
 
-  sendResponse(res, { message: "Login successful", data: { user: sanitizeUser(user), accessToken: tokens.accessToken } });
+  sendResponse(res, { message: "Login successful", data: { user: sanitizeUser(user, member), accessToken: tokens.accessToken } });
 });
 
 const refresh = asyncHandler(async (req, res) => {

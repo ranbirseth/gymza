@@ -24,12 +24,15 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         try {
           const { data } = await getMyProfile();
           const updatedStatus = data.data?.status;
-          if (updatedStatus && updatedStatus !== user.status) {
-            setUser({ ...user, status: updatedStatus });
+          const updatedPaymentStatus = data.data?.paymentStatus;
+          if (updatedStatus && (updatedStatus !== user.status || updatedPaymentStatus !== user.paymentStatus)) {
+            setUser({ ...user, status: updatedStatus, paymentStatus: updatedPaymentStatus });
             if (updatedStatus === "inactive") {
               navigate("/account-inactive");
             } else if (updatedStatus === "pending") {
               navigate("/pending-approval");
+            } else if (updatedStatus === "expired" || updatedStatus === "frozen" || updatedPaymentStatus === "pending") {
+              navigate("/access-restricted");
             }
           }
         } catch (error) {
@@ -47,6 +50,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     }
     if (user.status === "inactive") {
       return <Navigate to="/account-inactive" replace />;
+    }
+    if (user.status === "expired" || user.status === "frozen" || user.paymentStatus === "pending") {
+      return <Navigate to="/access-restricted" replace />;
     }
   }
 

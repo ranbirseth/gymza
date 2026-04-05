@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Check, X, Plus, Trash2, Edit2, Save } from 'lucide-react';
-import { getPlans, createPlan, deletePlan } from '../features/plans/plans.api';
+import { Check, X, Plus, Trash2, Edit2, Save, IndianRupee, Clock, Zap } from 'lucide-react';
+import { getPlans, createPlan, deletePlan, updatePlan } from '../features/plans/plans.api';
 import Modal from '../components/Modal';
 
 const PlansPage: React.FC = () => {
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [plans, setPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [formData, setFormData] = useState({ name: '', monthlyPrice: 0, yearlyPrice: 0, features: [] as string[] });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({ name: '', price: 0, duration: 30, features: [] as string[] });
   const [featureInput, setFeatureInput] = useState('');
 
   const fetchPlans = async () => {
@@ -30,23 +30,43 @@ const PlansPage: React.FC = () => {
     fetchPlans();
   }, []);
 
-  const handleAddPlan = async (e: React.FormEvent) => {
+  const handleOpenAdd = () => {
+    setEditingId(null);
+    setFormData({ name: '', price: 0, duration: 30, features: [] });
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (plan: any) => {
+    setEditingId(plan._id);
+    setFormData({
+      name: plan.name,
+      price: plan.price,
+      duration: plan.duration,
+      features: plan.features || []
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     try {
-      await createPlan(formData);
+      if (editingId) {
+        await updatePlan(editingId, formData);
+      } else {
+        await createPlan(formData);
+      }
       setIsModalOpen(false);
-      setFormData({ name: '', monthlyPrice: 0, yearlyPrice: 0, features: [] });
       fetchPlans();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to create plan');
+      alert(error.response?.data?.message || 'Failed to save plan');
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this plan?')) return;
+    if (!window.confirm('Are you sure you want to delete this plan? This cannot be undone if members are using it.')) return;
     try {
       await deletePlan(id);
       fetchPlans();
@@ -66,22 +86,22 @@ const PlansPage: React.FC = () => {
   };
 
   return (
-    <div className="text-center">
+    <div>
       <div className="page-header" style={{ marginBottom: '3rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h1>Membership Plans</h1>
-            <p className="text-muted">Manage and configure subscription tiers.</p>
+            <p className="text-muted">Create and manage gym subscription plans.</p>
           </div>
-          <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
+          <button className="btn btn-primary" onClick={handleOpenAdd}>
             <Plus size={18} />
-            Add Plan
+            Add New Plan
           </button>
         </div>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add New Plan">
-        <form onSubmit={handleAddPlan}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? "Edit Plan" : "Add New Plan"}>
+        <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">Plan Name</label>
             <input 
@@ -89,137 +109,151 @@ const PlansPage: React.FC = () => {
               required 
               value={formData.name}
               onChange={e => setFormData({...formData, name: e.target.value})}
-              placeholder="e.g. Pro Monthly"
+              placeholder="e.g. Basic Monthly, Pro Yearly"
             />
           </div>
+          
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">Monthly Price (₹)</label>
-              <input 
-                className="form-input" 
-                type="number"
-                required 
-                value={formData.monthlyPrice}
-                onChange={e => setFormData({...formData, monthlyPrice: Number(e.target.value)})}
-              />
+              <label className="form-label">Price (₹)</label>
+              <div style={{ position: 'relative' }}>
+                <IndianRupee size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--clr-text-muted)' }} />
+                <input 
+                  className="form-input" 
+                  style={{ paddingLeft: '35px' }}
+                  type="number"
+                  required 
+                  min="0"
+                  value={formData.price}
+                  onChange={e => setFormData({...formData, price: Number(e.target.value)})}
+                />
+              </div>
             </div>
             <div className="form-group">
-              <label className="form-label">Yearly Price (₹)</label>
-              <input 
-                className="form-input" 
-                type="number"
-                required 
-                value={formData.yearlyPrice}
-                onChange={e => setFormData({...formData, yearlyPrice: Number(e.target.value)})}
-              />
+              <label className="form-label">Duration (Days)</label>
+              <div style={{ position: 'relative' }}>
+                <Clock size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--clr-text-muted)' }} />
+                <input 
+                  className="form-input" 
+                  style={{ paddingLeft: '35px' }}
+                  type="number"
+                  required 
+                  min="1"
+                  value={formData.duration}
+                  onChange={e => setFormData({...formData, duration: Number(e.target.value)})}
+                />
+              </div>
             </div>
           </div>
+
           <div className="form-group">
-            <label className="form-label">Features</label>
+            <label className="form-label">Plan Features</label>
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
               <input 
                 className="form-input" 
                 value={featureInput}
                 onChange={e => setFeatureInput(e.target.value)}
-                placeholder="Add a feature..."
+                placeholder="Add a feature (e.g. Personal Trainer)..."
+                onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addFeature())}
               />
               <button type="button" className="btn btn-secondary" onClick={addFeature}>Add</button>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
               {formData.features.map((f, i) => (
-                <span key={i} className="status-badge active" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span key={i} className="status-badge active" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.8rem' }}>
                   {f}
-                  <X size={12} style={{ cursor: 'pointer' }} onClick={() => removeFeature(i)} />
+                  <X size={14} style={{ cursor: 'pointer', opacity: 0.7 }} onClick={() => removeFeature(i)} />
                 </span>
               ))}
             </div>
           </div>
+
           <div style={{ marginTop: '2rem' }}>
             <button className="btn btn-primary w-full" type="submit" disabled={isSaving}>
               <Save size={18} />
-              {isSaving ? 'Creating...' : 'Create Plan'}
+              {isSaving ? 'Saving...' : (editingId ? 'Update Plan' : 'Create Plan')}
             </button>
           </div>
         </form>
       </Modal>
 
-      <div style={{ 
-        display: 'inline-flex', 
-        background: 'var(--clr-bg-card)', 
-        padding: '0.4rem', 
-        borderRadius: '100px', 
-        border: '1px solid var(--clr-glass-border)',
-        marginBottom: '3rem'
-      }}>
-        <button 
-          onClick={() => setBillingCycle('monthly')}
-          className={`btn ${billingCycle === 'monthly' ? 'btn-primary' : 'btn-secondary'}`}
-          style={{ borderRadius: '100px', padding: '0.5rem 1.5rem' }}
-        >
-          Monthly
-        </button>
-        <button 
-          onClick={() => setBillingCycle('yearly')}
-          className={`btn ${billingCycle === 'yearly' ? 'btn-primary' : 'btn-secondary'}`}
-          style={{ borderRadius: '100px', padding: '0.5rem 1.5rem' }}
-        >
-          Yearly <span style={{ fontSize: '0.7rem', opacity: 0.8, marginLeft: '0.4rem' }}>Save 20%</span>
-        </button>
-      </div>
+      {loading ? (
+        <div style={{ padding: '4rem', textAlign: 'center' }}>
+          <div className="spinner"></div>
+          <p className="text-muted" style={{ marginTop: '1rem' }}>Loading plans...</p>
+        </div>
+      ) : (
+        <div className="grid-cards">
+          {plans.map((plan) => (
+            <div key={plan._id} className="glass-card" style={{ 
+              padding: '2.5rem',
+              position: 'relative',
+              textAlign: 'center'
+            }}>
+              <div style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', display: 'flex', gap: '0.5rem' }}>
+                <button className="btn-icon" onClick={() => handleOpenEdit(plan)} title="Edit">
+                  <Edit2 size={14} />
+                </button>
+                <button className="btn-icon danger" onClick={() => handleDelete(plan._id)} title="Delete">
+                  <Trash2 size={14} />
+                </button>
+              </div>
 
-      <div className="grid-cards" style={{ alignItems: 'center' }}>
-        {plans.map((plan, i) => (
-          <div key={plan._id} className={`glass-card ${plan.popular ? 'popular-card' : ''}`} style={{ 
-            padding: '2.5rem',
-            border: plan.popular ? '2px solid var(--clr-primary)' : '1px solid var(--clr-glass-border)',
-            transform: plan.popular ? 'scale(1.05)' : 'none',
-            zIndex: plan.popular ? 2 : 1
-          }}>
-            <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.5rem' }}>
-              <button className="btn-icon danger" onClick={() => handleDelete(plan._id)}>
-                <Trash2 size={14} />
+              <div style={{ 
+                display: 'inline-flex', 
+                padding: '0.75rem', 
+                borderRadius: '16px', 
+                background: 'rgba(var(--clr-primary-rgb), 0.1)', 
+                color: 'var(--clr-primary)',
+                marginBottom: '1.5rem'
+              }}>
+                <Zap size={24} fill="currentColor" />
+              </div>
+
+              <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{plan.name}</h3>
+              <p className="text-muted" style={{ fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                Valid for {plan.duration} days
+              </p>
+
+              <div style={{ marginBottom: '2rem' }}>
+                <span style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--clr-primary)' }}>
+                  ₹{plan.price.toLocaleString()}
+                </span>
+              </div>
+
+              <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2.5rem', minHeight: '150px' }}>
+                {(plan.features || []).map((feature: string, idx: number) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(34, 197, 94, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Check size={12} className="text-success" />
+                    </div>
+                    <span style={{ fontSize: '0.9rem' }}>{feature}</span>
+                  </div>
+                ))}
+                {(!plan.features || plan.features.length === 0) && (
+                  <p className="text-muted" style={{ fontSize: '0.85rem', fontStyle: 'italic' }}>No specific features listed</p>
+                )}
+              </div>
+
+              <button className="btn btn-secondary w-full" style={{ justifyContent: 'center' }}>
+                Assign to Member
               </button>
             </div>
-            {plan.popular && (
-              <div style={{ 
-                position: 'absolute', 
-                top: '0', 
-                left: '50%', 
-                transform: 'translate(-50%, -50%)',
-                background: 'var(--clr-primary)',
-                color: 'white',
-                padding: '0.4rem 1rem',
-                borderRadius: '100px',
-                fontSize: '0.75rem',
-                fontWeight: '700',
-                textTransform: 'uppercase'
-              }}>
-                Most Popular
-              </div>
-            )}
-            <h3 style={{ fontSize: '1.25rem', color: plan.popular ? 'var(--clr-primary)' : 'var(--clr-text-muted)', marginBottom: '1.5rem' }}>{plan.name}</h3>
-            <div style={{ marginBottom: '2rem' }}>
-              <span style={{ fontSize: '2.5rem', fontWeight: '800' }}>
-                ₹{((billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice) || 0).toLocaleString()}
-              </span>
-              <span className="text-muted">/{billingCycle === 'monthly' ? 'month' : 'year'}</span>
-            </div>
+          ))}
+        </div>
+      )}
 
-            <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2.5rem' }}>
-              {(plan.features || []).map((feature: string, idx: number) => (
-                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <Check size={18} className="text-success" />
-                  <span style={{ fontSize: '0.9rem' }}>{feature}</span>
-                </div>
-              ))}
-            </div>
-
-            <button className={`btn ${plan.popular ? 'btn-primary' : 'btn-secondary'} w-full`}>
-              Get Started
-            </button>
-          </div>
-        ))}
-      </div>
+      {!loading && plans.length === 0 && (
+        <div className="glass-panel text-center" style={{ padding: '5rem' }}>
+          <Zap size={48} className="text-muted" style={{ marginBottom: '1.5rem', opacity: 0.3 }} />
+          <h3>No plans created yet</h3>
+          <p className="text-muted" style={{ marginBottom: '2rem' }}>Get started by creating your first membership plan.</p>
+          <button className="btn btn-primary" onClick={handleOpenAdd}>
+            <Plus size={18} />
+            Add First Plan
+          </button>
+        </div>
+      )}
     </div>
   );
 };

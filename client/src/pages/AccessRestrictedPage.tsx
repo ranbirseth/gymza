@@ -1,10 +1,10 @@
 import React, { useEffect } from "react";
 import { useAuthStore } from "../store/auth.store";
-import { Clock, LogOut, Mail } from "lucide-react";
+import { Lock, LogOut, CreditCard, CalendarX } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getMyProfile } from "../features/members/members.api";
 
-export default function PendingApprovalPage() {
+export default function AccessRestrictedPage() {
   const { user, logout, setUser } = useAuthStore();
   const navigate = useNavigate();
 
@@ -14,33 +14,36 @@ export default function PendingApprovalPage() {
       return;
     }
 
-    // If they are already active, redirect them out of here
-    if (user.status === "active") {
+    // If they are active and paid, send them to dashboard
+    if (user.status === "active" && user.paymentStatus === "paid") {
       navigate("/");
       return;
     }
 
-    // Poll for status changes every 5 seconds
+    // If they were set back to pending or inactive, redirect to those pages
+    if (user.status === "pending") {
+      navigate("/pending-approval");
+      return;
+    }
+    if (user.status === "inactive") {
+      navigate("/account-inactive");
+      return;
+    }
+
+    // Poll for status/payment changes every 5 seconds
     const interval = setInterval(async () => {
       try {
         const { data } = await getMyProfile();
         const updatedUser = data.data;
         if (updatedUser) {
-          if (updatedUser.status === "active") {
-            setUser({ ...user, status: "active", paymentStatus: updatedUser.paymentStatus });
+          const isNowActive = updatedUser.status === "active" && updatedUser.paymentStatus === "paid";
+          if (isNowActive) {
+            setUser({ ...user, status: updatedUser.status, paymentStatus: updatedUser.paymentStatus });
             navigate("/");
-          } else if (updatedUser.status === "inactive") {
-            logout();
-            navigate("/account-inactive");
           }
         }
-      } catch (error: any) {
-        // If 403, it means account was likely discarded
-        if (error.response?.status === 403) {
-          logout();
-          navigate("/account-inactive");
-        }
-        console.error("Polling status error:", error);
+      } catch (error) {
+        console.error("Polling restricted status error:", error);
       }
     }, 5000);
 
@@ -51,6 +54,9 @@ export default function PendingApprovalPage() {
     logout();
     navigate("/login");
   };
+
+  const isExpired = user?.status === "expired";
+  const isPaymentPending = user?.paymentStatus === "pending";
 
   return (
     <div className="login-page" style={{ 
@@ -81,20 +87,21 @@ export default function PendingApprovalPage() {
           width: '80px',
           height: '80px',
           borderRadius: '24px',
-          background: 'rgba(245, 158, 11, 0.1)',
-          color: '#f59e0b',
+          background: 'rgba(244, 63, 94, 0.1)',
+          color: 'var(--clr-danger)',
           marginBottom: '2rem'
         }}>
-          <Clock size={40} />
+          {isExpired ? <CalendarX size={40} /> : <Lock size={40} />}
         </div>
         
         <h1 style={{ fontSize: '2rem', fontWeight: '800', marginBottom: '1rem' }}>
-          Approval Pending
+          {isExpired ? "Membership Expired" : "Access Restricted"}
         </h1>
         
         <p className="text-muted" style={{ fontSize: '1.1rem', lineHeight: '1.6', marginBottom: '2rem' }}>
-          Hello <strong>{user?.name}</strong>! Your account request has been sent to the administrator. 
-          Please wait for approval before you can access the dashboard.
+          Hello <strong>{user?.name}</strong>! {isExpired 
+            ? "Your gym membership has expired. Please renew your plan to continue using the gym facilities." 
+            : "Your payment is currently pending. Access to the dashboard is restricted until the administrator confirms your payment."}
         </p>
 
         <div style={{ 
@@ -105,8 +112,8 @@ export default function PendingApprovalPage() {
           border: '1px solid var(--clr-glass-border)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', justifyContent: 'center', color: 'var(--clr-text-muted)' }}>
-            <Mail size={18} />
-            <span>We'll notify you at <strong>{user?.email}</strong></span>
+            <CreditCard size={18} />
+            <span>Please contact the <strong>Gym Admin</strong> to {isExpired ? "renew" : "make payment"}</span>
           </div>
         </div>
 
