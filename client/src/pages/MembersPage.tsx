@@ -301,7 +301,8 @@ const MembersPage: React.FC = () => {
               </div>
               
               <h3 style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>{member.user?.name}</h3>
-              <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>{member.user?.email}</p>
+              <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '0.25rem' }}>{member.user?.email}</p>
+              <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '1rem', fontWeight: 600 }}>ID: {member.secretCode}</p>
               
               <div className="glass-panel" style={{ padding: '0.75rem', marginBottom: '1.5rem', background: 'rgba(255,255,255,0.03)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>

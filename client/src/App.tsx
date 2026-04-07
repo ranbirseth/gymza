@@ -24,6 +24,7 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const PendingApprovalPage = lazy(() => import("./pages/PendingApprovalPage"));
 const DiscardedPage = lazy(() => import("./pages/DiscardedPage"));
 const AccessRestrictedPage = lazy(() => import("./pages/AccessRestrictedPage"));
+const QRAttendancePage = lazy(() => import("./pages/QRAttendancePage"));
 
 function App() {
   const { user } = useAuthStore();
@@ -50,6 +51,7 @@ function App() {
           <Route path="/pending-approval" element={<PendingApprovalPage />} />
           <Route path="/account-inactive" element={<DiscardedPage />} />
           <Route path="/access-restricted" element={<AccessRestrictedPage />} />
+          <Route path="/mark-attendance" element={<QRAttendancePage />} />
           
           <Route
             path="/"

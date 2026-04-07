@@ -1,6 +1,8 @@
 const router = require("express").Router();
 const { protect, authorize } = require("../middlewares/auth.middleware");
-const { checkIn, checkOut, history, faceVerifyPlaceholder } = require("../controllers/attendance.controller");
+const { markAttendance, checkIn, checkOut, history, faceVerifyPlaceholder } = require("../controllers/attendance.controller");
+
+router.post("/mark", markAttendance);
 
 router.use(protect);
 router.get("/", authorize("admin", "trainer"), history);

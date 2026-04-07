@@ -15,6 +15,17 @@ const isPlanActive = (expiryDate, paymentStatus) => {
   return paymentStatus === "paid" && new Date() < new Date(expiryDate);
 };
 
+const generateUniqueSecretCode = async () => {
+  let code;
+  let exists = true;
+  while (exists) {
+    code = Math.floor(100 + Math.random() * 900).toString();
+    const existing = await Member.findOne({ secretCode: code });
+    if (!existing) exists = false;
+  }
+  return code;
+};
+
 const createMember = asyncHandler(async (req, res) => {
   const { name, email, phone, password, trainer, planId, membershipStartDate, branchCode = "MAIN" } = req.body;
   const photo = req.file ? `/uploads/${req.file.filename}` : undefined;
@@ -31,6 +42,9 @@ const createMember = asyncHandler(async (req, res) => {
       membershipExpiryDate = calculateExpiry(start, plan.duration);
     }
   }
+
+  const secretCode = await generateUniqueSecretCode();
+
   const member = await Member.create({
     gymId,
     user: user._id,
@@ -41,6 +55,7 @@ const createMember = asyncHandler(async (req, res) => {
     isActivePlan: false, // Becomes active only after payment
     status: "pending",
     paymentStatus: "pending",
+    secretCode,
     branchCode
   });
   sendResponse(res, { status: 201, message: "Member created", data: member });
@@ -85,6 +100,7 @@ const fetchMembers = async (query, gymId) => {
         membershipExpiryDate: 1,
         status: 1,
         paymentStatus: 1,
+        secretCode: 1,
         createdAt: 1,
         user: "$userDoc",
         trainer: { $arrayElemAt: ["$trainerDoc", 0] },

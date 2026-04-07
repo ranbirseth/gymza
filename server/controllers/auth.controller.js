@@ -22,7 +22,8 @@ const sanitizeUser = (user, member = null) => ({
   role: user.role,
   photo: user.photo,
   status: member ? member.status : user.status,
-  paymentStatus: member ? member.paymentStatus : "paid" // Admins/Trainers are always "paid"
+  paymentStatus: member ? member.paymentStatus : "paid", // Admins/Trainers are always "paid"
+  secretCode: member ? member.secretCode : undefined
 });
 
 const Member = require("../models/member.model");
@@ -39,12 +40,22 @@ const signup = asyncHandler(async (req, res) => {
   let member = null;
   // If signing up as a member, also create the Member profile with pending status
   if (finalRole === "member") {
+    // Generate unique secret code for the new member
+    let secretCode;
+    let exists = true;
+    while (exists) {
+      secretCode = Math.floor(100 + Math.random() * 900).toString();
+      const existing = await Member.findOne({ secretCode });
+      if (!existing) exists = false;
+    }
+
     member = await Member.create({
       gymId,
       user: user._id,
       branchCode: "MAIN",
       isActivePlan: false,
-      status: "pending"
+      status: "pending",
+      secretCode
     });
   }
 

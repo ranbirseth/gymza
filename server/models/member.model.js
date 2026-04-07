@@ -11,6 +11,7 @@ const memberSchema = new mongoose.Schema(
     isActivePlan: { type: Boolean, default: false, index: true },
     status: { type: String, enum: ["pending", "active", "expired", "cancelled", "inactive", "frozen"], default: "pending", index: true },
     paymentStatus: { type: String, enum: ["paid", "pending"], default: "pending", index: true },
+    secretCode: { type: String, unique: true, sparse: true }, // 3-digit unique code
     frozenAt: Date,
     remainingDays: Number,
     branchCode: { type: String, default: "MAIN", index: true }

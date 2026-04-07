@@ -1,20 +1,29 @@
 import React, { useEffect, useState } from 'react';
-import { getAttendance, markAttendance } from '../features/attendance/attendance.api';
+import { getAttendance, manualCheckIn } from '../features/attendance/attendance.api';
 import { getMembers } from '../features/members/members.api';
-import { Calendar, Plus, Clock, CheckCircle2, XCircle, Save } from 'lucide-react';
+import { Calendar, Plus, Clock, CheckCircle2, XCircle, Save, Search, UserCheck, QrCode, Download } from 'lucide-react';
+import { useDebounce } from '../hooks/useDebounce';
 import Modal from '../components/Modal';
+import { format } from 'date-fns';
 
 const AttendancePage: React.FC = () => {
   const [attendance, setAttendance] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [formData, setFormData] = useState({ memberId: '', status: 'present' as 'present' | 'absent' });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
+  const debouncedSearch = useDebounce(searchQuery, 500);
+  const [formData, setFormData] = useState({ memberId: '' });
+
+  const qrUrl = `${window.location.origin}/mark-attendance`;
+  const qrImage = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrUrl)}`;
 
   const fetchAttendance = () => {
     setLoading(true);
-    getAttendance()
+    getAttendance({ search: debouncedSearch, date: dateFilter })
       .then((res) => {
         const data = res.data?.data;
         setAttendance(Array.isArray(data) ? data : (data?.items || []));
@@ -25,7 +34,10 @@ const AttendancePage: React.FC = () => {
 
   useEffect(() => {
     fetchAttendance();
-    getMembers(1, 100).then(res => {
+  }, [debouncedSearch, dateFilter]);
+
+  useEffect(() => {
+    getMembers({ limit: 100 }).then(res => {
       const data = res.data?.data;
       setMembers(Array.isArray(data) ? data : (data?.items || []));
     }).catch(() => setMembers([]));
@@ -36,15 +48,21 @@ const AttendancePage: React.FC = () => {
     if (!formData.memberId) return alert('Please select a member');
     setIsSaving(true);
     try {
-      await markAttendance(formData);
+      await manualCheckIn({ member: formData.memberId });
       setIsModalOpen(false);
-      setFormData({ memberId: '', status: 'present' });
+      setFormData({ memberId: '' });
       fetchAttendance();
     } catch (error: any) {
       alert(error.response?.data?.message || 'Failed to mark attendance');
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const stats = {
+    present: attendance.filter(a => a.status === 'present' || a.status === 'completed').length,
+    completed: attendance.filter(a => a.status === 'completed').length,
+    total: attendance.length
   };
 
   return (
@@ -55,10 +73,20 @@ const AttendancePage: React.FC = () => {
             <h1>Attendance Tracking</h1>
             <p className="text-muted">Monitor daily check-ins and member activity.</p>
           </div>
-          <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
-            <Plus size={18} />
-            Mark Attendance
-          </button>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button className="btn btn-secondary" onClick={() => setIsQRModalOpen(true)}>
+              <QrCode size={18} />
+              View QR Code
+            </button>
+            <button className="btn btn-secondary" onClick={() => window.open('/mark-attendance', '_blank')}>
+              <UserCheck size={18} />
+              Open QR Page
+            </button>
+            <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
+              <Plus size={18} />
+              Mark Attendance
+            </button>
+          </div>
         </div>
       </div>
 
@@ -74,34 +102,9 @@ const AttendancePage: React.FC = () => {
             >
               <option value="">-- Select Member --</option>
               {members.map(m => (
-                <option key={m._id} value={m._id}>{m.userDoc?.name || m.name || 'Unknown'}</option>
+                <option key={m._id} value={m._id}>{m.user?.name || m.name || 'Unknown'}</option>
               ))}
             </select>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Status</label>
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <label className="status-badge active" style={{ cursor: 'pointer', opacity: formData.status === 'present' ? 1 : 0.4 }}>
-                <input 
-                  type="radio" 
-                  name="status" 
-                  checked={formData.status === 'present'} 
-                  onChange={() => setFormData({...formData, status: 'present'})}
-                  style={{ display: 'none' }}
-                />
-                Present
-              </label>
-              <label className="status-badge inactive" style={{ cursor: 'pointer', opacity: formData.status === 'absent' ? 1 : 0.4 }}>
-                <input 
-                  type="radio" 
-                  name="status" 
-                  checked={formData.status === 'absent'} 
-                  onChange={() => setFormData({...formData, status: 'absent'})}
-                  style={{ display: 'none' }}
-                />
-                Absent
-              </label>
-            </div>
           </div>
           <div style={{ marginTop: '2rem' }}>
             <button className="btn btn-primary w-full" type="submit" disabled={isSaving}>
@@ -112,12 +115,47 @@ const AttendancePage: React.FC = () => {
         </form>
       </Modal>
 
+      {/* QR Code Modal */}
+      <Modal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} title="Attendance QR Code">
+        <div style={{ textAlign: 'center', padding: '1rem' }}>
+          <p className="text-muted" style={{ marginBottom: '1.5rem' }}>
+            Display this QR code at your gym entrance. Members can scan it to mark their attendance.
+          </p>
+          <div className="glass-panel" style={{ 
+            display: 'inline-block', 
+            padding: '1.5rem', 
+            background: 'white', 
+            borderRadius: '1rem',
+            marginBottom: '1.5rem'
+          }}>
+            <img 
+              src={qrImage} 
+              alt="Attendance QR" 
+              style={{ width: '250px', height: '250px', display: 'block' }} 
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <p style={{ fontSize: '0.85rem', wordBreak: 'break-all' }} className="text-primary">
+              {qrUrl}
+            </p>
+            <button 
+              className="btn btn-primary" 
+              style={{ justifyContent: 'center' }}
+              onClick={() => window.open(qrImage, '_blank')}
+            >
+              <Download size={18} />
+              Download / Print QR
+            </button>
+          </div>
+        </div>
+      </Modal>
+
       <div className="grid-stats">
         <div className="stat-card">
           <div className="stat-info">
-            <h3>Total Present</h3>
-            <p className="stat-value">84</p>
-            <p className="stat-trend trend-up">Today's Peak: 10 AM</p>
+            <h3>Total Check-ins</h3>
+            <p className="stat-value">{stats.total}</p>
+            <p className="stat-trend trend-up">{stats.present} Currently Present</p>
           </div>
           <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--clr-success)' }}>
             <CheckCircle2 size={24} />
@@ -125,34 +163,45 @@ const AttendancePage: React.FC = () => {
         </div>
         <div className="stat-card">
           <div className="stat-info">
-            <h3>Total Absent</h3>
-            <p className="stat-value">12</p>
-            <p className="text-muted">Excused: 5</p>
+            <h3>Workouts Completed</h3>
+            <p className="stat-value">{stats.completed}</p>
+            <p className="text-muted">Members checked-out</p>
           </div>
-          <div className="stat-icon" style={{ background: 'rgba(244, 63, 94, 0.1)', color: 'var(--clr-danger)' }}>
-            <XCircle size={24} />
+          <div className="stat-icon" style={{ background: 'rgba(6, 182, 212, 0.1)', color: 'var(--clr-secondary)' }}>
+            <UserCheck size={24} />
           </div>
         </div>
         <div className="stat-card">
           <div className="stat-info">
-            <h3>Avg. Duration</h3>
-            <p className="stat-value">1.5h</p>
-            <p className="text-muted">Per Session</p>
+            <h3>Active Today</h3>
+            <p className="stat-value">{stats.present}</p>
+            <p className="text-muted">Members in gym</p>
           </div>
-          <div className="stat-icon" style={{ background: 'rgba(6, 182, 212, 0.1)', color: 'var(--clr-secondary)' }}>
+          <div className="stat-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: 'var(--clr-warning)' }}>
             <Clock size={24} />
           </div>
         </div>
       </div>
 
       <div className="glass-panel" style={{ padding: '1.5rem', marginTop: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h3 style={{ fontSize: '1.1rem' }}>Today's Log</h3>
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <button className="btn btn-secondary">
-              <Calendar size={18} />
-              Select Date
-            </button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <h3 style={{ fontSize: '1.1rem' }}>Attendance Log</h3>
+          <div style={{ display: 'flex', gap: '1rem', flex: 1, justifyContent: 'flex-end' }}>
+            <div className="search-bar" style={{ maxWidth: '300px', background: 'var(--clr-bg-base)' }}>
+              <Search size={18} className="text-muted" />
+              <input 
+                placeholder="Search member..." 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <input 
+              type="date" 
+              className="form-input" 
+              style={{ width: 'auto' }}
+              value={dateFilter}
+              onChange={e => setDateFilter(e.target.value)}
+            />
           </div>
         </div>
 
@@ -161,31 +210,46 @@ const AttendancePage: React.FC = () => {
             <thead>
               <tr>
                 <th>Member Name</th>
-                <th>Check-in Time</th>
+                <th>Check-in</th>
+                <th>Check-out</th>
                 <th>Date</th>
                 <th>Status</th>
               </tr>
             </thead>
             <tbody>
-              {attendance.map((entry) => (
-                <tr key={entry._id}>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <div className="avatar" style={{ width: '32px', height: '32px', fontSize: '0.75rem' }}>
-                        {(entry.member?.userDoc?.name || entry.name || 'U').charAt(0)}
-                      </div>
-                      <span style={{ fontWeight: '600' }}>{entry.member?.userDoc?.name || entry.name || 'Unknown'}</span>
-                    </div>
-                  </td>
-                  <td>{entry.time}</td>
-                  <td>{entry.date}</td>
-                  <td>
-                    <span className={`status-badge ${entry.status}`}>
-                      {entry.status}
-                    </span>
-                  </td>
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="text-center" style={{ padding: '2rem' }}>Loading log...</td>
                 </tr>
-              ))}
+              ) : attendance.length > 0 ? (
+                attendance.map((entry) => (
+                  <tr key={entry._id}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div className="avatar" style={{ width: '32px', height: '32px', fontSize: '0.75rem' }}>
+                          {(entry.member?.user?.name || 'U').charAt(0)}
+                        </div>
+                        <div>
+                          <p style={{ fontWeight: '600', marginBottom: 0 }}>{entry.member?.user?.name || 'Unknown'}</p>
+                          <p className="text-muted" style={{ fontSize: '0.7rem', marginBottom: 0 }}>ID: {entry.member?.secretCode}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{entry.checkIn ? format(new Date(entry.checkIn), 'hh:mm a') : '-'}</td>
+                    <td>{entry.checkOut ? format(new Date(entry.checkOut), 'hh:mm a') : '-'}</td>
+                    <td>{entry.date}</td>
+                    <td>
+                      <span className={`status-badge ${entry.status === 'completed' ? 'active' : 'pending'}`}>
+                        {entry.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="text-center" style={{ padding: '2rem' }}>No attendance found for this selection.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
