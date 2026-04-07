@@ -6,7 +6,7 @@ const { getPagination } = require("../utils/pagination");
 const { AppError } = require("../utils/appError");
 
 const markAttendance = asyncHandler(async (req, res) => {
-  const { secretCode } = req.body;
+  const { secretCode, action } = req.body;
   if (!secretCode) throw new AppError("Secret code is required", 400);
 
   // 1. Find member by secret code
@@ -20,7 +20,12 @@ const markAttendance = asyncHandler(async (req, res) => {
   let attendance = await Attendance.findOne({ member: member._id, date: today });
 
   if (!attendance) {
-    // Case 1: First Scan (Check-in)
+    // If user explicitly clicked check-out but hasn't checked in
+    if (action === "check-out") {
+      throw new AppError("You haven't checked in yet today.", 400);
+    }
+
+    // Case 1: Check-in
     attendance = await Attendance.create({
       gymId,
       member: member._id,
@@ -45,7 +50,12 @@ const markAttendance = asyncHandler(async (req, res) => {
   }
 
   if (attendance.status === "present") {
-    // Case 2: Second Scan (Check-out)
+    // If user explicitly clicked check-in but is already present
+    if (action === "check-in") {
+      throw new AppError("You are already checked in.", 400);
+    }
+
+    // Case 2: Check-out
     attendance.checkOut = new Date();
     attendance.status = "completed";
     await attendance.save();

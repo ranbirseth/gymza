@@ -14,22 +14,20 @@ const QRAttendancePage: React.FC = () => {
     document.documentElement.setAttribute('data-theme', 'dark');
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleAction = async (action: 'check-in' | 'check-out') => {
     if (secretCode.length !== 3 || !/^\d+$/.test(secretCode)) {
       setStatus({ type: 'error', message: 'Please enter a valid 3-digit code.' });
       return;
     }
 
-    setStatus({ type: 'loading', message: 'Marking attendance...' });
+    setStatus({ type: 'loading', message: `Processing ${action}...` });
 
     try {
-      const response = await markAttendance({ secretCode });
+      const response = await markAttendance({ secretCode, action });
       const data = response.data;
 
       if (response.status === 200 || response.status === 201) {
-        setStatus({ type: 'success', message: data.message || 'Attendance marked successfully!' });
+        setStatus({ type: 'success', message: data.message || `${action === 'check-in' ? 'Checked in' : 'Checked out'} successfully!` });
         setSecretCode('');
         // Clear success message after 5 seconds
         setTimeout(() => setStatus({ type: 'idle', message: '' }), 5000);
@@ -73,7 +71,7 @@ const QRAttendancePage: React.FC = () => {
         <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', fontWeight: 700 }}>Mark Attendance</h2>
         <p className="text-muted" style={{ marginBottom: '2rem' }}>Enter your unique 3-digit secret code</p>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <div className="form-group" style={{ textAlign: 'left' }}>
             <label className="form-label" style={{ fontSize: '0.85rem', opacity: 0.8 }}>Secret Code</label>
             <input
@@ -98,20 +96,27 @@ const QRAttendancePage: React.FC = () => {
             />
           </div>
 
-          <button 
-            type="submit" 
-            className="btn btn-primary w-full" 
-            style={{ height: '50px', justifyContent: 'center', fontSize: '1.1rem' }}
-            disabled={status.type === 'loading' || secretCode.length !== 3}
-          >
-            {status.type === 'loading' ? (
-              <>
-                <Loader2 className="animate-spin" size={20} />
-                Processing...
-              </>
-            ) : 'Submit Code'}
-          </button>
-        </form>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button 
+              type="button" 
+              className="btn btn-primary w-full" 
+              style={{ height: '50px', justifyContent: 'center', fontSize: '1.1rem', background: 'var(--clr-success)', borderColor: 'var(--clr-success)' }}
+              disabled={status.type === 'loading' || secretCode.length !== 3}
+              onClick={() => handleAction('check-in')}
+            >
+              Check In
+            </button>
+            <button 
+              type="button" 
+              className="btn btn-primary w-full" 
+              style={{ height: '50px', justifyContent: 'center', fontSize: '1.1rem', background: 'var(--clr-secondary)', borderColor: 'var(--clr-secondary)' }}
+              disabled={status.type === 'loading' || secretCode.length !== 3}
+              onClick={() => handleAction('check-out')}
+            >
+              Check Out
+            </button>
+          </div>
+        </div>
 
         {status.type !== 'idle' && status.type !== 'loading' && (
           <div className={`glass-panel ${status.type === 'success' ? 'text-success' : 'text-danger'}`} style={{

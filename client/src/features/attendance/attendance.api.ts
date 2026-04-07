@@ -7,7 +7,7 @@ export const getAttendance = (params: { search?: string; date?: string } = {}) =
   return http.get(url);
 };
 
-export const markAttendance = (payload: { secretCode: string }) => 
+export const markAttendance = (payload: { secretCode: string; action?: 'check-in' | 'check-out' }) => 
   http.post("/attendance/mark", payload);
 
 export const manualCheckIn = (payload: { member: string; faceRecognitionMatched?: boolean }) => 
