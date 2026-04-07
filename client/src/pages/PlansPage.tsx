@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Check, X, Plus, Trash2, Edit2, Save, IndianRupee, Clock, Zap } from 'lucide-react';
+import { Check, X, Plus, Trash2, Edit2, Save, IndianRupee, Clock, Zap, Search, UserPlus } from 'lucide-react';
 import { getPlans, createPlan, deletePlan, updatePlan } from '../features/plans/plans.api';
+import { getMembers, assignPlan } from '../features/members/members.api';
+import { recordPayment } from '../features/payments/payments.api';
+import { useDebounce } from '../hooks/useDebounce';
 import Modal from '../components/Modal';
 
 const PlansPage: React.FC = () => {
@@ -11,6 +14,15 @@ const PlansPage: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '', price: 0, duration: 30, features: [] as string[] });
   const [featureInput, setFeatureInput] = useState('');
+
+  // States for Assigning Plan to Member
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [selectedPlanForAssign, setSelectedPlanForAssign] = useState<any>(null);
+  const [members, setMembers] = useState<any[]>([]);
+  const [memberSearchQuery, setMemberSearchQuery] = useState('');
+  const debouncedMemberSearch = useDebounce(memberSearchQuery, 500);
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [recordAssignPayment, setRecordAssignPayment] = useState(true);
 
   const fetchPlans = async () => {
     setLoading(true);
@@ -29,6 +41,53 @@ const PlansPage: React.FC = () => {
   useEffect(() => {
     fetchPlans();
   }, []);
+
+  useEffect(() => {
+    if (isAssignModalOpen) {
+      const fetchMembers = async () => {
+        try {
+          const res = await getMembers({ search: debouncedMemberSearch, limit: 10 });
+          setMembers(res.data?.data?.items || []);
+        } catch (error) {
+          console.error('Failed to fetch members', error);
+        }
+      };
+      fetchMembers();
+    }
+  }, [debouncedMemberSearch, isAssignModalOpen]);
+
+  const handleOpenAssignModal = (plan: any) => {
+    setSelectedPlanForAssign(plan);
+    setIsAssignModalOpen(true);
+    setMemberSearchQuery('');
+  };
+
+  const handleAssignToMember = async (memberId: string) => {
+    if (!selectedPlanForAssign) return;
+    setIsAssigning(true);
+    try {
+      await assignPlan(memberId, { planId: selectedPlanForAssign._id });
+      
+      // Also record payment if checkbox is checked
+      if (recordAssignPayment) {
+        await recordPayment({
+          member: memberId,
+          plan: selectedPlanForAssign._id,
+          amount: selectedPlanForAssign.price,
+          method: 'cash',
+          status: 'paid',
+          note: `Assigned plan ${selectedPlanForAssign.name} from Plans section.`
+        });
+      }
+      
+      alert('Plan assigned successfully!');
+      setIsAssignModalOpen(false);
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Failed to assign plan');
+    } finally {
+      setIsAssigning(false);
+    }
+  };
 
   const handleOpenAdd = () => {
     setEditingId(null);
@@ -177,6 +236,68 @@ const PlansPage: React.FC = () => {
         </form>
       </Modal>
 
+      {/* Modal for Selecting Member to Assign Plan */}
+      <Modal isOpen={isAssignModalOpen} onClose={() => setIsAssignModalOpen(false)} title={`Assign ${selectedPlanForAssign?.name} to Member`}>
+        <div className="form-group">
+          <label className="form-label">Search Member</label>
+          <div style={{ position: 'relative' }}>
+            <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--clr-text-muted)' }} />
+            <input 
+              className="form-input" 
+              style={{ paddingLeft: '40px' }}
+              placeholder="Type member name or email..."
+              value={memberSearchQuery}
+              onChange={(e) => setMemberSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '1rem' }}>
+          <input 
+            type="checkbox" 
+            id="recordAssignPayment" 
+            checked={recordAssignPayment} 
+            onChange={(e) => setRecordAssignPayment(e.target.checked)} 
+            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+          />
+          <label htmlFor="recordAssignPayment" style={{ cursor: 'pointer', fontSize: '0.9rem', fontWeight: '500' }}>
+            Mark as Paid immediately (Cash) - Recommended to avoid Access Restricted page
+          </label>
+        </div>
+
+        <div style={{ marginTop: '1.5rem', maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          {members.length > 0 ? (
+            members.map((member) => (
+              <div 
+                key={member._id} 
+                className="glass-panel" 
+                style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  padding: '1rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onClick={() => handleAssignToMember(member._id)}
+              >
+                <div>
+                  <p style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{member.user?.name || member.name}</p>
+                  <p className="text-muted" style={{ fontSize: '0.8rem' }}>{member.user?.email || member.email}</p>
+                </div>
+                <button className="btn-icon" style={{ background: 'var(--clr-primary)', color: 'white' }} disabled={isAssigning}>
+                  <UserPlus size={16} />
+                </button>
+              </div>
+            ))
+          ) : (
+            <p className="text-center text-muted" style={{ padding: '2rem' }}>
+              {memberSearchQuery ? 'No members found matching your search.' : 'Search for a member to assign this plan.'}
+            </p>
+          )}
+        </div>
+      </Modal>
+
       {loading ? (
         <div style={{ padding: '4rem', textAlign: 'center' }}>
           <div className="spinner"></div>
@@ -235,7 +356,11 @@ const PlansPage: React.FC = () => {
                 )}
               </div>
 
-              <button className="btn btn-secondary w-full" style={{ justifyContent: 'center' }}>
+              <button 
+                className="btn btn-secondary w-full" 
+                style={{ justifyContent: 'center' }}
+                onClick={() => handleOpenAssignModal(plan)}
+              >
                 Assign to Member
               </button>
             </div>

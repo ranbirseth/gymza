@@ -3,6 +3,7 @@ import { Users, Search, Plus, Filter, MoreVertical, Edit2, Trash2, Shield, Calen
 import { getMembers, createMember, deleteMember, assignPlan, renewPlan, cancelPlan, freezePlan, resumePlan, approveMember, updateMember } from '../features/members/members.api';
 import { getPlans } from '../features/plans/plans.api';
 import { recordPayment } from '../features/payments/payments.api';
+import { useDebounce } from '../hooks/useDebounce';
 import Modal from '../components/Modal';
 
 const MembersPage: React.FC = () => {
@@ -12,6 +13,8 @@ const MembersPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubModalOpen, setIsSubModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 500);
   const [formData, setFormData] = useState({ 
     name: '', 
     email: '', 
@@ -27,10 +30,10 @@ const MembersPage: React.FC = () => {
     recordPayment: true
   });
 
-  const fetchMembers = async () => {
+  const fetchMembers = async (search = '') => {
     setLoading(true);
     try {
-      const res = await getMembers();
+      const res = await getMembers({ search, limit: 100 });
       setMembers(res.data?.data?.items || []);
     } catch (error) {
       console.error('Failed to fetch members', error);
@@ -51,7 +54,10 @@ const MembersPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchMembers();
+    fetchMembers(debouncedSearch);
+  }, [debouncedSearch]);
+
+  useEffect(() => {
     fetchPlans();
   }, []);
 
@@ -166,7 +172,11 @@ const MembersPage: React.FC = () => {
       <div className="glass-panel" style={{ padding: '1.25rem', marginBottom: '2rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
         <div className="search-bar" style={{ flex: 1, minWidth: '300px' }}>
           <Search size={18} className="text-muted" />
-          <input placeholder="Search members by name, email or phone..." />
+          <input 
+            placeholder="Search members by name, email or phone..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
         <button className="btn btn-secondary">
           <Filter size={18} />
@@ -183,6 +193,14 @@ const MembersPage: React.FC = () => {
           <div className="form-group">
             <label className="form-label">Email</label>
             <input className="form-input" type="email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Phone Number</label>
+            <input className="form-input" type="tel" required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Password</label>
+            <input className="form-input" type="password" required value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
           </div>
           <div className="form-group">
             <label className="form-label">Initial Plan (Optional)</label>

@@ -56,7 +56,13 @@ const fetchMembers = async (query, gymId) => {
   }
 
   const q = query.search
-    ? { $or: [{ "userDoc.name": new RegExp(query.search, "i") }, { "userDoc.email": new RegExp(query.search, "i") }] }
+    ? { 
+        $or: [
+          { "userDoc.name": new RegExp(query.search, "i") }, 
+          { "userDoc.email": new RegExp(query.search, "i") },
+          { "userDoc.phone": new RegExp(query.search, "i") }
+        ] 
+      }
     : {};
   const baseLookup = [
     { $lookup: { from: "users", localField: "user", foreignField: "_id", as: "userDoc" } },
