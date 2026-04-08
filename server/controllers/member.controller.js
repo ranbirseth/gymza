@@ -1,6 +1,12 @@
 const Member = require("../models/member.model");
 const User = require("../models/user.model");
 const Plan = require("../models/plan.model");
+const Payment = require("../models/payment.model");
+const Attendance = require("../models/attendance.model");
+const Progress = require("../models/progress.model");
+const Notification = require("../models/notification.model");
+const WorkoutPlan = require("../models/workout.model");
+const DietPlan = require("../models/diet.model");
 const { asyncHandler } = require("../utils/asyncHandler");
 const { sendResponse } = require("../utils/response");
 const { getPagination } = require("../utils/pagination");
@@ -151,10 +157,25 @@ const updateMember = asyncHandler(async (req, res) => {
 });
 
 const deleteMember = asyncHandler(async (req, res) => {
-  const member = await Member.findOneAndDelete({ _id: req.params.id, gymId: req.gymId });
+  const member = await Member.findOne({ _id: req.params.id, gymId: req.gymId });
   if (!member) throw Object.assign(new Error("Member not found in your gym"), { statusCode: 404 });
-  await User.findByIdAndDelete(member.user);
-  sendResponse(res, { message: "Member deleted", data: {} });
+  
+  const userId = member.user;
+  const memberId = member._id;
+
+  // Perform cascade deletion of all related data
+  await Promise.all([
+    Member.findByIdAndDelete(memberId),
+    User.findByIdAndDelete(userId),
+    Payment.deleteMany({ member: memberId }),
+    Attendance.deleteMany({ member: memberId }),
+    Progress.deleteMany({ member: memberId }),
+    Notification.deleteMany({ user: userId }),
+    WorkoutPlan.deleteMany({ assignedTo: memberId, isTemplate: false }),
+    DietPlan.deleteMany({ assignedTo: memberId, isTemplate: false })
+  ]);
+
+  sendResponse(res, { message: "Member and all associated data deleted permanently", data: {} });
 });
 
 const assignPlan = asyncHandler(async (req, res) => {
@@ -169,7 +190,13 @@ const assignPlan = asyncHandler(async (req, res) => {
   member.membershipExpiryDate = calculateExpiry(startDate, plan.duration);
   member.isActivePlan = false; // Requires payment to become active
   member.paymentStatus = "pending";
-  member.status = "pending";
+  // Only set to pending if they are already pending or inactive (new signup/discarded)
+  if (member.status === "pending" || member.status === "inactive") {
+    member.status = "pending";
+  } else {
+    // If they were active/expired/cancelled, stay active (access will be blocked by paymentStatus)
+    member.status = "active";
+  }
   await member.save();
   sendResponse(res, { message: "Plan assigned to member. Awaiting payment.", data: member });
 });
@@ -190,8 +217,13 @@ const renewPlan = asyncHandler(async (req, res) => {
   member.membershipExpiryDate = calculateExpiry(startDate, plan.duration);
   member.currentPlan = plan._id;
   member.paymentStatus = "pending";
-  member.status = "pending";
   member.isActivePlan = false;
+  
+  if (member.status === "pending" || member.status === "inactive") {
+    member.status = "pending";
+  } else {
+    member.status = "active";
+  }
   
   await member.save();
   sendResponse(res, { message: "Plan renewed. Awaiting payment.", data: member });
@@ -211,8 +243,13 @@ const upgradePlan = asyncHandler(async (req, res) => {
   member.membershipExpiryDate = calculateExpiry(startDate, plan.duration);
   member.currentPlan = plan._id;
   member.paymentStatus = "pending";
-  member.status = "pending";
   member.isActivePlan = false;
+  
+  if (member.status === "pending" || member.status === "inactive") {
+    member.status = "pending";
+  } else {
+    member.status = "active";
+  }
 
   await member.save();
   sendResponse(res, { message: "Plan upgraded. Awaiting payment.", data: member });

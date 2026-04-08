@@ -1,11 +1,9 @@
 const router = require("express").Router();
 const { protect, authorize } = require("../middlewares/auth.middleware");
 const { makeCrud } = require("../controllers/genericCrud.controller");
-const { WorkoutPlan, DietPlan, ClassSlot, InventoryItem, Branch, Referral } = require("../models/generic.model");
+const { ClassSlot, InventoryItem, Branch, Referral } = require("../models/generic.model");
 
 const entities = {
-  "workout-plans": makeCrud(WorkoutPlan, "Workout plan"),
-  "diet-plans": makeCrud(DietPlan, "Diet plan"),
   "class-slots": makeCrud(ClassSlot, "Class slot"),
   inventory: makeCrud(InventoryItem, "Inventory item"),
   branches: makeCrud(Branch, "Branch"),

@@ -85,6 +85,8 @@ app.use("/api/trainers", require("./routes/trainer.routes"));
 app.use("/api/notifications", require("./routes/notification.routes"));
 app.use("/api/bookings", require("./routes/booking.routes"));
 app.use("/api/referrals", require("./routes/referral.routes"));
+app.use("/api/workouts", require("./routes/workout.routes"));
+app.use("/api/diets", require("./routes/diet.routes"));
 
 // Serving client build in production
 if (process.env.NODE_ENV === "production" || process.env.RENDER) {

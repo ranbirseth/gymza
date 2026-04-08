@@ -18,11 +18,18 @@ http.interceptors.response.use(
   async (error) => {
     if (error.response?.status !== 401 || error.config?._retry) throw error;
     error.config._retry = true;
-    const { setTokens } = useAuthStore.getState();
-    const resp = await axios.post(`${http.defaults.baseURL}/auth/refresh`, {}, { withCredentials: true });
-    setTokens(resp.data.data.accessToken);
-    error.config.headers.Authorization = `Bearer ${resp.data.data.accessToken}`;
-    return http(error.config);
+    const { setTokens, logout } = useAuthStore.getState();
+    try {
+      const resp = await axios.post(`${http.defaults.baseURL}/auth/refresh`, {}, { withCredentials: true });
+      const newAccessToken = resp.data.data.accessToken;
+      setTokens(newAccessToken);
+      error.config.headers.Authorization = `Bearer ${newAccessToken}`;
+      return http(error.config);
+    } catch (refreshError) {
+      logout();
+      window.location.href = "/login";
+      throw refreshError;
+    }
   }
 );
 

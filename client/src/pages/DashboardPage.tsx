@@ -123,7 +123,7 @@ export default function DashboardPage() {
                     color: 'var(--clr-text-muted)',
                     whiteSpace: 'nowrap'
                   }}>
-                    {day._id.split('-').slice(1).join('/')}
+                    {day._id?.split('-').slice(1).join('/') || 'Unknown'}
                   </span>
                 </div>
               ))

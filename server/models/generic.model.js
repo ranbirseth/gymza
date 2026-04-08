@@ -10,11 +10,9 @@ const genericSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const WorkoutPlan = mongoose.model("WorkoutPlan", genericSchema.clone());
-const DietPlan = mongoose.model("DietPlan", genericSchema.clone());
 const ClassSlot = mongoose.model("ClassSlot", genericSchema.clone());
 const InventoryItem = mongoose.model("InventoryItem", genericSchema.clone());
 const Branch = mongoose.model("Branch", genericSchema.clone());
 const Referral = mongoose.model("Referral", genericSchema.clone());
 
-module.exports = { WorkoutPlan, DietPlan, ClassSlot, InventoryItem, Branch, Referral };
+module.exports = { ClassSlot, InventoryItem, Branch, Referral };

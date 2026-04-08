@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { getPayments, markAsPaid, markAsUnpaid, getInvoice } from '../features/payments/payments.api';
-import { CreditCard, IndianRupee, Download, Search, Filter, ArrowUpRight, ArrowDownLeft, CheckCircle, XCircle, FileText } from 'lucide-react';
+import { CreditCard, IndianRupee, Download, Search, Filter, ArrowUpRight, ArrowDownLeft, CheckCircle, XCircle, FileText, Printer } from 'lucide-react';
+import Modal from '../components/Modal';
 
 const PaymentsPage: React.FC = () => {
   const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, pending: 0, pendingCount: 0 });
+  
+  // Invoice Modal State
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [fetchingInvoice, setFetchingInvoice] = useState(false);
 
   const fetchPayments = async () => {
     setLoading(true);
@@ -45,13 +51,44 @@ const PaymentsPage: React.FC = () => {
     }
   };
 
-  const handleDownloadInvoice = (id: string) => {
-    // In a real app, this would open/download a PDF
-    alert('Generating invoice PDF... (Feature coming soon)');
+  const handleDownloadInvoice = async (id: string) => {
+    setFetchingInvoice(true);
+    try {
+      const res = await getInvoice(id);
+      setSelectedInvoice(res.data.data);
+      setIsInvoiceModalOpen(true);
+    } catch (error) {
+      alert("Failed to fetch invoice data");
+    } finally {
+      setFetchingInvoice(false);
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleDownloadPDF = () => {
+    const element = document.querySelector('.invoice-printable') as HTMLElement;
+    if (!element) return;
+
+    // A simple way to "download" as PDF is to trigger print 
+    // but in modern browsers, print() allows "Save as PDF"
+    // For a real programmatic download, we'd use jspdf/html2canvas, 
+    // but since they aren't installed, we will use a dedicated print-to-pdf style trigger
+    window.print();
   };
 
   return (
     <div>
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          .invoice-printable, .invoice-printable * { visibility: visible; }
+          .invoice-printable { position: absolute; left: 0; top: 0; width: 100%; }
+          .btn-print { display: none !important; }
+        }
+      `}</style>
       <div className="page-header" style={{ marginBottom: '2rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
@@ -171,6 +208,78 @@ const PaymentsPage: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Invoice Modal */}
+      <Modal isOpen={isInvoiceModalOpen} onClose={() => setIsInvoiceModalOpen(false)} title="Payment Invoice">
+        {selectedInvoice && (
+          <div className="invoice-printable" style={{ padding: '1rem', color: '#1a1a1a', background: 'white', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', borderBottom: '2px solid #eee', paddingBottom: '1rem' }}>
+              <div>
+                <h2 style={{ color: 'var(--clr-primary)', marginBottom: '0.5rem' }}>GYMZA</h2>
+                <p style={{ fontSize: '0.85rem', color: '#666' }}>Premium Fitness Center</p>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <h3 style={{ marginBottom: '0.25rem' }}>INVOICE</h3>
+                <p style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{selectedInvoice.invoiceNumber}</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
+              <div>
+                <h4 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#888', marginBottom: '0.5rem' }}>Billed To</h4>
+                <p style={{ fontWeight: 'bold' }}>{selectedInvoice.member?.user?.name}</p>
+                <p style={{ fontSize: '0.85rem' }}>{selectedInvoice.member?.user?.email}</p>
+                <p style={{ fontSize: '0.85rem' }}>{selectedInvoice.member?.user?.phone}</p>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <h4 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#888', marginBottom: '0.5rem' }}>Payment Details</h4>
+                <p style={{ fontSize: '0.85rem' }}>Date: {new Date(selectedInvoice.date).toLocaleDateString()}</p>
+                <p style={{ fontSize: '0.85rem' }}>Method: <span style={{ textTransform: 'capitalize' }}>{selectedInvoice.method}</span></p>
+                <p style={{ fontSize: '0.85rem' }}>Status: <span style={{ color: selectedInvoice.status === 'paid' ? '#10b981' : '#f59e0b', fontWeight: 'bold' }}>{selectedInvoice.status.toUpperCase()}</span></p>
+              </div>
+            </div>
+
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '2rem' }}>
+              <thead>
+                <tr style={{ background: '#f8f9fa' }}>
+                  <th style={{ textAlign: 'left', padding: '12px', borderBottom: '1px solid #eee' }}>Description</th>
+                  <th style={{ textAlign: 'right', padding: '12px', borderBottom: '1px solid #eee' }}>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
+                    <p style={{ fontWeight: 'bold' }}>{selectedInvoice.plan?.name || 'Membership Plan'}</p>
+                    <p style={{ fontSize: '0.75rem', color: '#666' }}>{selectedInvoice.plan?.duration} Days Access</p>
+                  </td>
+                  <td style={{ textAlign: 'right', padding: '12px', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>₹{selectedInvoice.amount.toLocaleString()}</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td style={{ padding: '12px', textAlign: 'right', fontWeight: 'bold' }}>Total</td>
+                  <td style={{ padding: '12px', textAlign: 'right', fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--clr-primary)' }}>₹{selectedInvoice.amount.toLocaleString()}</td>
+                </tr>
+              </tfoot>
+            </table>
+
+            <div style={{ textAlign: 'center', marginTop: '3rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
+              <p style={{ fontSize: '0.8rem', color: '#888' }}>Thank you for your business!</p>
+              <p style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '0.5rem' }}>This is a computer-generated invoice.</p>
+            </div>
+
+            <div className="btn-print" style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
+              <button className="btn btn-primary flex-1" onClick={handlePrint}>
+                <Printer size={18} /> Print Invoice
+              </button>
+              <button className="btn btn-secondary flex-1" onClick={handleDownloadPDF}>
+                <Download size={18} /> Download (PDF)
+              </button>
+              <button className="btn btn-secondary" onClick={() => setIsInvoiceModalOpen(false)}>Close</button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

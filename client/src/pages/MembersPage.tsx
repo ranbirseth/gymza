@@ -105,17 +105,15 @@ const MembersPage: React.FC = () => {
           await renewPlan(selectedMember._id, { planId: subFormData.planId });
         }
 
-        // If admin wants to record payment immediately
-        if (subFormData.recordPayment) {
-          await recordPayment({
-            member: selectedMember._id,
-            plan: subFormData.planId,
-            amount: subFormData.amount,
-            method: 'cash',
-            status: 'paid',
-            note: subFormData.note
-          });
-        }
+        // Record payment (Paid or Pending)
+        await recordPayment({
+          member: selectedMember._id,
+          plan: subFormData.planId,
+          amount: subFormData.amount,
+          method: 'cash',
+          status: subFormData.recordPayment ? 'paid' : 'pending',
+          note: subFormData.note
+        });
       }
       setIsSubModalOpen(false);
       fetchMembers();
@@ -141,6 +139,16 @@ const MembersPage: React.FC = () => {
       fetchMembers();
     } catch (error: any) {
       alert(error.response?.data?.message || 'Discard failed');
+    }
+  };
+
+  const handleDeleteMember = async (id: string) => {
+    if (!window.confirm('Are you sure you want to PERMANENTLY delete this member and ALL their associated data (payments, attendance, progress)? This action cannot be undone.')) return;
+    try {
+      await deleteMember(id);
+      fetchMembers();
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Deletion failed');
     }
   };
 
@@ -323,17 +331,14 @@ const MembersPage: React.FC = () => {
                     <button className="btn btn-primary flex-1" onClick={() => handleApprove(member._id)} style={{ fontSize: '0.85rem', padding: '0.5rem' }}>
                       <Shield size={14} /> Approve
                     </button>
-                    <button className="btn btn-secondary" onClick={() => handleDiscard(member._id)} style={{ color: 'var(--clr-danger)' }}>
-                      <Trash2 size={14} />
-                    </button>
                   </>
                 ) : (
                   <button className="btn btn-secondary flex-1" onClick={() => handleOpenSubscription(member)} style={{ fontSize: '0.85rem', padding: '0.5rem' }}>
                     <CreditCard size={14} /> Subscription
                   </button>
                 )}
-                <button className="btn-icon">
-                  <Edit2 size={14} />
+                <button className="btn-icon" onClick={() => handleDeleteMember(member._id)} style={{ color: 'var(--clr-danger)' }} title="Delete Member Permanently">
+                  <Trash2 size={14} />
                 </button>
               </div>
             </div>

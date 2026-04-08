@@ -65,7 +65,12 @@ const listPayments = asyncHandler(async (req, res) => {
     ...(req.query.method ? { method: req.query.method } : {})
   };
   const [items, total] = await Promise.all([
-    Payment.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).populate("member"),
+    Payment.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate({ path: "member", populate: { path: "user", select: "name" } })
+      .populate("plan", "name"),
     Payment.countDocuments(filter)
   ]);
   sendResponse(res, { message: "Payments fetched", data: { items, page, limit, total } });
@@ -75,16 +80,36 @@ const pendingDues = asyncHandler(async (req, res) => {
   const { skip, limit, page } = getPagination(req.query);
   const filter = { gymId: req.gymId, status: "pending" };
   const [items, total] = await Promise.all([
-    Payment.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).populate("member"),
+    Payment.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate({ path: "member", populate: { path: "user", select: "name" } })
+      .populate("plan", "name"),
     Payment.countDocuments(filter)
   ]);
   sendResponse(res, { message: "Pending dues fetched", data: { items, page, limit, total } });
 });
 
 const getInvoice = asyncHandler(async (req, res) => {
-  const payment = await Payment.findOne({ _id: req.params.id, gymId: req.gymId });
+  const payment = await Payment.findOne({ _id: req.params.id, gymId: req.gymId })
+    .populate({ path: "member", populate: { path: "user", select: "name email phone" } })
+    .populate("plan", "name description duration");
   if (!payment) throw Object.assign(new Error("Payment not found in your gym"), { statusCode: 404 });
-  sendResponse(res, { message: "Invoice fetched", data: payment.invoice });
+  
+  // Create a detailed invoice object for the frontend
+  const invoiceData = {
+    ...payment.invoice,
+    invoiceNumber: payment.invoiceNumber,
+    date: payment.date,
+    amount: payment.amount,
+    method: payment.method,
+    status: payment.status,
+    member: payment.member,
+    plan: payment.plan
+  };
+  
+  sendResponse(res, { message: "Invoice fetched", data: invoiceData });
 });
 
 const createOnlinePaymentIntent = asyncHandler(async (req, res) => {
