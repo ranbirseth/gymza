@@ -68,12 +68,12 @@ const AttendancePage: React.FC = () => {
   return (
     <div>
       <div className="page-header" style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="flex-responsive" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1.5rem' }}>
           <div>
             <h1>Attendance Tracking</h1>
             <p className="text-muted">Monitor daily check-ins and member activity.</p>
           </div>
-          <div style={{ display: 'flex', gap: '1rem' }}>
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
             <button className="btn btn-secondary" onClick={() => setIsQRModalOpen(true)}>
               <QrCode size={18} />
               View QR Code

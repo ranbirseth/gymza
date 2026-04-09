@@ -147,7 +147,7 @@ const PlansPage: React.FC = () => {
   return (
     <div>
       <div className="page-header" style={{ marginBottom: '3rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="flex-responsive" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1.5rem' }}>
           <div>
             <h1>Membership Plans</h1>
             <p className="text-muted">Create and manage gym subscription plans.</p>

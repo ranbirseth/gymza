@@ -33,7 +33,7 @@ export default function DashboardPage() {
   return (
     <div>
       <div className="page-header" style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="flex-responsive" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1.5rem' }}>
           <div>
             <h1>Dashboard Overview</h1>
             <p className="text-muted">Welcome back! Here's what's happening today.</p>
@@ -45,7 +45,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid-stats">
+      <div className="grid-stats" style={{ marginBottom: '2rem' }}>
         <div className="stat-card">
           <div className="stat-info">
             <h3>Total Members</h3>
@@ -97,7 +97,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid-cards" style={{ gridTemplateColumns: '2fr 1fr' }}>
+      <div className="dashboard-grid">
         <div className="glass-panel" style={{ padding: '1.5rem', minHeight: '350px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <h3 style={{ fontSize: '1.1rem' }}>Revenue Analytics (Last 7 Days)</h3>

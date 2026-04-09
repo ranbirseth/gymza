@@ -75,7 +75,7 @@ export default function LoginPage() {
         display: 'flex', 
         flexDirection: 'column', 
         justifyContent: 'center', 
-        padding: '3rem',
+        padding: '0.5rem 0rem 0.5rem 0rem',
         zIndex: 1
       }}>
         <div className="glass-card" style={{ padding: '3rem' }}>
