@@ -373,7 +373,7 @@ const WorkoutsPage: React.FC = () => {
                     }}
                   />
                   {day.exercises.map((ex, eIdx) => (
-                    <div key={eIdx} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px dashed var(--clr-glass-border)', pb: '0.5rem' }}>
+                    <div key={eIdx} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px dashed var(--clr-glass-border)', paddingBottom: '0.5rem' }}>
                       <div className="col-span-full md:col-span-2">
                         <input className="form-input" placeholder="Exercise" value={ex.name} onChange={e => {
                           const newDays = [...workoutForm.days];
@@ -439,7 +439,7 @@ const WorkoutsPage: React.FC = () => {
                 <div key={meal} className="glass-panel" style={{ padding: '1rem', marginBottom: '1rem' }}>
                   <h4 style={{ textTransform: 'capitalize', marginBottom: '1rem' }}>{meal}</h4>
                   {dietForm.meals[meal].map((item, idx) => (
-                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px dashed var(--clr-glass-border)', pb: '0.5rem' }}>
+                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px dashed var(--clr-glass-border)', paddingBottom: '0.5rem' }}>
                       <div className="col-span-full md:col-span-2">
                         <input className="form-input" placeholder="Food Name" value={item.foodName} onChange={e => {
                           const newMeals = {...dietForm.meals};
@@ -527,7 +527,7 @@ const MemberView: React.FC = () => {
             <h3 style={{ marginBottom: '0.5rem', color: 'var(--clr-text-main)' }}>{workout.name}</h3>
             {workout.days.map((day: any, i: number) => (
               <div key={i} className="glass-panel" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)' }}>
-                <h4 style={{ color: 'var(--clr-primary)', marginBottom: '1rem', borderBottom: '1px solid var(--clr-glass-border)', pb: '0.5rem' }}>{day.dayName}</h4>
+                <h4 style={{ color: 'var(--clr-primary)', marginBottom: '1rem', borderBottom: '1px solid var(--clr-glass-border)', paddingBottom: '0.5rem' }}>{day.dayName}</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {day.exercises.map((ex: any, j: number) => (
                     <div key={j} style={{ padding: '0.75rem', borderBottom: '1px solid var(--clr-glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
@@ -562,7 +562,7 @@ const MemberView: React.FC = () => {
             </div>
             {(['breakfast', 'lunch', 'dinner', 'snacks'] as const).map((meal) => (
               <div key={meal} className="glass-panel" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)' }}>
-                <h4 style={{ textTransform: 'capitalize', marginBottom: '1rem', color: 'var(--clr-success)', borderBottom: '1px solid var(--clr-glass-border)', pb: '0.5rem' }}>{meal}</h4>
+                <h4 style={{ textTransform: 'capitalize', marginBottom: '1rem', color: 'var(--clr-success)', borderBottom: '1px solid var(--clr-glass-border)', paddingBottom: '0.5rem' }}>{meal}</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {diet.meals[meal].map((item: any, i: number) => (
                     <div key={i} style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--clr-glass-border)', display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
