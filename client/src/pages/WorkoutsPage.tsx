@@ -505,13 +505,24 @@ const MemberView: React.FC = () => {
   useEffect(() => {
     Promise.all([getMyWorkout(), getMyDiet()])
       .then(([wRes, dRes]) => {
-        setWorkout(wRes.data.data);
-        setDiet(dRes.data.data);
+        setWorkout(wRes?.data?.data ?? null);
+        setDiet(dRes?.data?.data ?? null);
+      })
+      .catch(() => {
+        setWorkout(null);
+        setDiet(null);
       })
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <div className="loading-state"><div className="spinner"></div></div>;
+
+  const workoutDays = Array.isArray(workout?.days) ? workout.days : [];
+  const mealItems = (meal: 'breakfast' | 'lunch' | 'dinner' | 'snacks') => {
+    const meals = diet?.meals;
+    const items = meals && typeof meals === 'object' ? (meals as any)[meal] : undefined;
+    return Array.isArray(items) ? items : [];
+  };
 
   return (
     <div className="grid-cards" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))', gap: '1.5rem' }}>
@@ -525,11 +536,11 @@ const MemberView: React.FC = () => {
         {!workout ? <p className="text-muted">No workout assigned yet.</p> : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <h3 style={{ marginBottom: '0.5rem', color: 'var(--clr-text-main)' }}>{workout.name}</h3>
-            {workout.days.map((day: any, i: number) => (
+            {workoutDays.map((day: any, i: number) => (
               <div key={i} className="glass-panel" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)' }}>
                 <h4 style={{ color: 'var(--clr-primary)', marginBottom: '1rem', borderBottom: '1px solid var(--clr-glass-border)', paddingBottom: '0.5rem' }}>{day.dayName}</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {day.exercises.map((ex: any, j: number) => (
+                  {(Array.isArray(day?.exercises) ? day.exercises : []).map((ex: any, j: number) => (
                     <div key={j} style={{ padding: '0.75rem', borderBottom: '1px solid var(--clr-glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
                       <div style={{ minWidth: 0 }}>
                         <p style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.25rem', wordBreak: 'break-word' }}>{ex.name}</p>
@@ -564,7 +575,7 @@ const MemberView: React.FC = () => {
               <div key={meal} className="glass-panel" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)' }}>
                 <h4 style={{ textTransform: 'capitalize', marginBottom: '1rem', color: 'var(--clr-success)', borderBottom: '1px solid var(--clr-glass-border)', paddingBottom: '0.5rem' }}>{meal}</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {diet.meals[meal].map((item: any, i: number) => (
+                  {mealItems(meal).map((item: any, i: number) => (
                     <div key={i} style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--clr-glass-border)', display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
                       <p style={{ fontSize: '0.9rem', wordBreak: 'break-word' }}>{item.foodName}</p>
                       <p className="text-muted" style={{ fontSize: '0.85rem', textAlign: 'right', flexShrink: 0 }}>{item.quantity}</p>
