@@ -222,26 +222,44 @@ const WorkoutsPage: React.FC = () => {
           {activeTab === 'workouts' ? (
             workoutTemplates.length > 0 ? (
               workoutTemplates.map((t) => (
-                <div key={t._id} className="glass-card" style={{ padding: '1.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                    <h3 style={{ fontSize: '1.1rem' }}>{t.name}</h3>
-                    <span className="status-badge active" style={{ fontSize: '0.7rem' }}>{t.difficulty}</span>
+                <div key={t._id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', height: 'fit-content', minHeight: '280px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', alignItems: 'flex-start', gap: '1rem' }}>
+                    <h3 style={{ fontSize: '1.1rem', color: 'var(--clr-text-main)', wordBreak: 'break-word' }}>{t.name}</h3>
+                    <span className="status-badge active" style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', flexShrink: 0 }}>{t.difficulty}</span>
                   </div>
-                  <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>Goal: {t.goal}</p>
-                  <div style={{ display: 'flex', gap: '1rem', color: 'var(--clr-text-muted)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <Zap size={14} /> {t.days?.length} Days
+                  <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '1rem' }}>Goal: {t.goal}</p>
+                  
+                  {/* Summary of exercises */}
+                  <div style={{ flex: 1, marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--clr-primary)', fontSize: '0.85rem', marginBottom: '0.75rem', fontWeight: '600' }}>
+                      <Zap size={14} /> {t.days?.length} Days Training
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '200px', overflowY: 'auto', paddingRight: '8px' }}>
+                      {t.days?.map((day: any, idx: number) => (
+                        <div key={idx} style={{ borderLeft: '2px solid var(--clr-primary)', paddingLeft: '0.75rem' }}>
+                          <p style={{ fontWeight: '700', color: 'var(--clr-text-main)', fontSize: '0.8rem', marginBottom: '0.25rem' }}>{day.dayName}</p>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                            {day.exercises?.map((ex: any, exIdx: number) => (
+                              <div key={exIdx} style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)', display: 'flex', justifyContent: 'space-between', gap: '0.5rem' }}>
+                                <span style={{ wordBreak: 'break-word' }}>{ex.name}</span>
+                                <span style={{ fontWeight: '600', flexShrink: 0 }}>{ex.sets}×{ex.reps}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button className="btn btn-secondary flex-1" onClick={() => {
+
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--clr-glass-border)' }}>
+                    <button className="btn btn-secondary flex-1" style={{ fontSize: '0.85rem', padding: '0.5rem' }} onClick={() => {
                       setSelectedTemplateForAssign({ id: t._id, type: 'workout', name: t.name });
                       setIsAssignModalOpen(true);
                     }}>
                       <UserPlus size={16} /> Assign
                     </button>
                     {isAdmin && (
-                      <button className="btn btn-icon danger" onClick={() => deleteWorkoutPlan(t._id).then(fetchData)}>
+                      <button className="btn btn-icon danger" style={{ width: '36px', height: '36px' }} onClick={() => deleteWorkoutPlan(t._id).then(fetchData)}>
                         <Trash2 size={16} />
                       </button>
                     )}
@@ -257,21 +275,46 @@ const WorkoutsPage: React.FC = () => {
           ) : (
             dietTemplates.length > 0 ? (
               dietTemplates.map((t) => (
-                <div key={t._id} className="glass-card" style={{ padding: '1.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                    <h3 style={{ fontSize: '1.1rem' }}>{t.name}</h3>
-                    <span className="status-badge active" style={{ fontSize: '0.7rem' }}>{t.goal}</span>
+                <div key={t._id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', height: 'fit-content', minHeight: '280px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', alignItems: 'flex-start', gap: '1rem' }}>
+                    <h3 style={{ fontSize: '1.1rem', color: 'var(--clr-text-main)', wordBreak: 'break-word' }}>{t.name}</h3>
+                    <span className="status-badge active" style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', flexShrink: 0 }}>{t.goal}</span>
                   </div>
-                  <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>Target: {t.calories} kcal</p>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button className="btn btn-secondary flex-1" onClick={() => {
+                  <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '1rem' }}>Target: {t.calories} kcal</p>
+                  
+                  {/* Summary of meals */}
+                  <div style={{ flex: 1, marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--clr-success)', fontSize: '0.85rem', marginBottom: '0.75rem', fontWeight: '600' }}>
+                      <Utensils size={14} /> Meal Breakdown
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '200px', overflowY: 'auto', paddingRight: '8px' }}>
+                      {(['breakfast', 'lunch', 'dinner', 'snacks'] as const).map((meal) => (
+                        t.meals?.[meal]?.length > 0 && (
+                          <div key={meal} style={{ borderLeft: '2px solid var(--clr-success)', paddingLeft: '0.75rem' }}>
+                            <p style={{ fontWeight: '700', color: 'var(--clr-text-main)', fontSize: '0.8rem', marginBottom: '0.25rem', textTransform: 'capitalize' }}>{meal}</p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                              {t.meals[meal].map((item: any, itemIdx: number) => (
+                                <div key={itemIdx} style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)', display: 'flex', justifyContent: 'space-between', gap: '0.5rem' }}>
+                                  <span style={{ wordBreak: 'break-word' }}>{item.foodName}</span>
+                                  <span style={{ flexShrink: 0 }}>{item.quantity}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--clr-glass-border)' }}>
+                    <button className="btn btn-secondary flex-1" style={{ fontSize: '0.85rem', padding: '0.5rem' }} onClick={() => {
                       setSelectedTemplateForAssign({ id: t._id, type: 'diet', name: t.name });
                       setIsAssignModalOpen(true);
                     }}>
                       <UserPlus size={16} /> Assign
                     </button>
                     {isAdmin && (
-                      <button className="btn btn-icon danger" onClick={() => deleteDietPlan(t._id).then(fetchData)}>
+                      <button className="btn btn-icon danger" style={{ width: '36px', height: '36px' }} onClick={() => deleteDietPlan(t._id).then(fetchData)}>
                         <Trash2 size={16} />
                       </button>
                     )}
@@ -290,127 +333,140 @@ const WorkoutsPage: React.FC = () => {
 
       {/* Workout Create Modal */}
       <Modal isOpen={isWorkoutModalOpen} onClose={() => setIsWorkoutModalOpen(false)} title="Create Workout Template">
-        <form onSubmit={handleCreateWorkout} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div className="form-group">
-            <label className="form-label">Plan Name</label>
-            <input className="form-input" required value={workoutForm.name} onChange={e => setWorkoutForm({...workoutForm, name: e.target.value})} placeholder="e.g. 5-Day Muscle Builder" />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        <form onSubmit={handleCreateWorkout} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <div style={{ flex: 1 }}>
             <div className="form-group">
-              <label className="form-label">Goal</label>
-              <select className="form-input" value={workoutForm.goal} onChange={e => setWorkoutForm({...workoutForm, goal: e.target.value})}>
-                <option>Fat Loss</option>
-                <option>Muscle Gain</option>
-                <option>Strength</option>
-                <option>General Fitness</option>
-              </select>
+              <label className="form-label">Plan Name</label>
+              <input className="form-input" required value={workoutForm.name} onChange={e => setWorkoutForm({...workoutForm, name: e.target.value})} placeholder="e.g. 5-Day Muscle Builder" />
             </div>
-            <div className="form-group">
-              <label className="form-label">Difficulty</label>
-              <select className="form-input" value={workoutForm.difficulty} onChange={e => setWorkoutForm({...workoutForm, difficulty: e.target.value})}>
-                <option>Beginner</option>
-                <option>Intermediate</option>
-                <option>Advanced</option>
-              </select>
-            </div>
-          </div>
-
-          <div style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '0.5rem' }}>
-            {workoutForm.days.map((day, dIdx) => (
-              <div key={dIdx} className="glass-panel" style={{ padding: '1rem', marginBottom: '1rem' }}>
-                <input 
-                  className="form-input" 
-                  style={{ fontWeight: 700, marginBottom: '1rem', background: 'transparent', border: 'none', borderBottom: '1px solid var(--clr-glass-border)', borderRadius: 0 }}
-                  value={day.dayName}
-                  onChange={e => {
-                    const newDays = [...workoutForm.days];
-                    newDays[dIdx].dayName = e.target.value;
-                    setWorkoutForm({...workoutForm, days: newDays});
-                  }}
-                />
-                {day.exercises.map((ex, eIdx) => (
-                  <div key={eIdx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                    <input className="form-input" placeholder="Exercise" value={ex.name} onChange={e => {
-                      const newDays = [...workoutForm.days];
-                      newDays[dIdx].exercises[eIdx].name = e.target.value;
-                      setWorkoutForm({...workoutForm, days: newDays});
-                    }} />
-                    <input className="form-input" placeholder="Sets" type="number" value={ex.sets} onChange={e => {
-                      const newDays = [...workoutForm.days];
-                      newDays[dIdx].exercises[eIdx].sets = Number(e.target.value);
-                      setWorkoutForm({...workoutForm, days: newDays});
-                    }} />
-                    <input className="form-input" placeholder="Reps" value={ex.reps} onChange={e => {
-                      const newDays = [...workoutForm.days];
-                      newDays[dIdx].exercises[eIdx].reps = e.target.value;
-                      setWorkoutForm({...workoutForm, days: newDays});
-                    }} />
-                    <input className="form-input" placeholder="Rest" value={ex.rest} onChange={e => {
-                      const newDays = [...workoutForm.days];
-                      newDays[dIdx].exercises[eIdx].rest = e.target.value;
-                      setWorkoutForm({...workoutForm, days: newDays});
-                    }} />
-                  </div>
-                ))}
-                <button type="button" className="btn btn-secondary w-full" style={{ fontSize: '0.8rem', padding: '0.4rem' }} onClick={() => addExercise(dIdx)}>+ Add Exercise</button>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+              <div className="form-group">
+                <label className="form-label">Goal</label>
+                <select className="form-input" value={workoutForm.goal} onChange={e => setWorkoutForm({...workoutForm, goal: e.target.value})}>
+                  <option>Fat Loss</option>
+                  <option>Muscle Gain</option>
+                  <option>Strength</option>
+                  <option>General Fitness</option>
+                </select>
               </div>
-            ))}
+              <div className="form-group">
+                <label className="form-label">Difficulty</label>
+                <select className="form-input" value={workoutForm.difficulty} onChange={e => setWorkoutForm({...workoutForm, difficulty: e.target.value})}>
+                  <option>Beginner</option>
+                  <option>Intermediate</option>
+                  <option>Advanced</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ paddingRight: '0.5rem' }}>
+              {workoutForm.days.map((day, dIdx) => (
+                <div key={dIdx} className="glass-panel" style={{ padding: '1rem', marginBottom: '1rem' }}>
+                  <input 
+                    className="form-input" 
+                    style={{ fontWeight: 700, marginBottom: '1rem', background: 'transparent', border: 'none', borderBottom: '1px solid var(--clr-glass-border)', borderRadius: 0 }}
+                    value={day.dayName}
+                    onChange={e => {
+                      const newDays = [...workoutForm.days];
+                      newDays[dIdx].dayName = e.target.value;
+                      setWorkoutForm({...workoutForm, days: newDays});
+                    }}
+                  />
+                  {day.exercises.map((ex, eIdx) => (
+                    <div key={eIdx} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px dashed var(--clr-glass-border)', pb: '0.5rem' }}>
+                      <div className="col-span-full md:col-span-2">
+                        <input className="form-input" placeholder="Exercise" value={ex.name} onChange={e => {
+                          const newDays = [...workoutForm.days];
+                          newDays[dIdx].exercises[eIdx].name = e.target.value;
+                          setWorkoutForm({...workoutForm, days: newDays});
+                        }} />
+                      </div>
+                      <input className="form-input" placeholder="Sets" type="number" value={ex.sets} onChange={e => {
+                        const newDays = [...workoutForm.days];
+                        newDays[dIdx].exercises[eIdx].sets = Number(e.target.value);
+                        setWorkoutForm({...workoutForm, days: newDays});
+                      }} />
+                      <input className="form-input" placeholder="Reps" value={ex.reps} onChange={e => {
+                        const newDays = [...workoutForm.days];
+                        newDays[dIdx].exercises[eIdx].reps = e.target.value;
+                        setWorkoutForm({...workoutForm, days: newDays});
+                      }} />
+                      <input className="form-input" placeholder="Rest" value={ex.rest} onChange={e => {
+                        const newDays = [...workoutForm.days];
+                        newDays[dIdx].exercises[eIdx].rest = e.target.value;
+                        setWorkoutForm({...workoutForm, days: newDays});
+                      }} />
+                    </div>
+                  ))}
+                  <button type="button" className="btn btn-secondary w-full" style={{ fontSize: '0.8rem', padding: '0.4rem' }} onClick={() => addExercise(dIdx)}>+ Add Exercise</button>
+                </div>
+              ))}
+            </div>
+            <button type="button" className="btn btn-secondary w-full mb-4" onClick={addWorkoutDay}>+ Add Day</button>
           </div>
-          <button type="button" className="btn btn-secondary" onClick={addWorkoutDay}>+ Add Day</button>
-          <button className="btn btn-primary w-full" type="submit">Save Template</button>
+          
+          <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--clr-glass-border)', position: 'sticky', bottom: 0, background: 'var(--clr-bg-sidebar)', zIndex: 10 }}>
+            <button className="btn btn-primary w-full" type="submit">Save Template</button>
+          </div>
         </form>
       </Modal>
 
       {/* Diet Create Modal */}
       <Modal isOpen={isDietModalOpen} onClose={() => setIsDietModalOpen(false)} title="Create Diet Template">
-        <form onSubmit={handleCreateDiet} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div className="form-group">
-            <label className="form-label">Plan Name</label>
-            <input className="form-input" required value={dietForm.name} onChange={e => setDietForm({...dietForm, name: e.target.value})} placeholder="e.g. High Protein Cutting" />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        <form onSubmit={handleCreateDiet} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <div style={{ flex: 1 }}>
             <div className="form-group">
-              <label className="form-label">Goal</label>
-              <select className="form-input" value={dietForm.goal} onChange={e => setDietForm({...dietForm, goal: e.target.value})}>
-                <option>Weight Loss</option>
-                <option>Muscle Gain</option>
-                <option>Maintenance</option>
-              </select>
+              <label className="form-label">Plan Name</label>
+              <input className="form-input" required value={dietForm.name} onChange={e => setDietForm({...dietForm, name: e.target.value})} placeholder="e.g. High Protein Cutting" />
             </div>
-            <div className="form-group">
-              <label className="form-label">Calories</label>
-              <input className="form-input" type="number" value={dietForm.calories} onChange={e => setDietForm({...dietForm, calories: Number(e.target.value)})} />
-            </div>
-          </div>
-
-          <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-            {(['breakfast', 'lunch', 'dinner', 'snacks'] as const).map((meal) => (
-              <div key={meal} className="glass-panel" style={{ padding: '1rem', marginBottom: '1rem' }}>
-                <h4 style={{ textTransform: 'capitalize', marginBottom: '1rem' }}>{meal}</h4>
-                {dietForm.meals[meal].map((item, idx) => (
-                  <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                    <input className="form-input" placeholder="Food Name" value={item.foodName} onChange={e => {
-                      const newMeals = {...dietForm.meals};
-                      newMeals[meal][idx].foodName = e.target.value;
-                      setDietForm({...dietForm, meals: newMeals});
-                    }} />
-                    <input className="form-input" placeholder="Qty" value={item.quantity} onChange={e => {
-                      const newMeals = {...dietForm.meals};
-                      newMeals[meal][idx].quantity = e.target.value;
-                      setDietForm({...dietForm, meals: newMeals});
-                    }} />
-                    <input className="form-input" placeholder="Kcal" type="number" value={item.calories} onChange={e => {
-                      const newMeals = {...dietForm.meals};
-                      newMeals[meal][idx].calories = Number(e.target.value);
-                      setDietForm({...dietForm, meals: newMeals});
-                    }} />
-                  </div>
-                ))}
-                <button type="button" className="btn btn-secondary w-full" style={{ fontSize: '0.8rem', padding: '0.4rem' }} onClick={() => addMealItem(meal)}>+ Add Item</button>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+              <div className="form-group">
+                <label className="form-label">Goal</label>
+                <select className="form-input" value={dietForm.goal} onChange={e => setDietForm({...dietForm, goal: e.target.value})}>
+                  <option>Weight Loss</option>
+                  <option>Muscle Gain</option>
+                  <option>Maintenance</option>
+                </select>
               </div>
-            ))}
+              <div className="form-group">
+                <label className="form-label">Calories</label>
+                <input className="form-input" type="number" value={dietForm.calories} onChange={e => setDietForm({...dietForm, calories: Number(e.target.value)})} />
+              </div>
+            </div>
+
+            <div style={{ paddingRight: '0.5rem' }}>
+              {(['breakfast', 'lunch', 'dinner', 'snacks'] as const).map((meal) => (
+                <div key={meal} className="glass-panel" style={{ padding: '1rem', marginBottom: '1rem' }}>
+                  <h4 style={{ textTransform: 'capitalize', marginBottom: '1rem' }}>{meal}</h4>
+                  {dietForm.meals[meal].map((item, idx) => (
+                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px dashed var(--clr-glass-border)', pb: '0.5rem' }}>
+                      <div className="col-span-full md:col-span-2">
+                        <input className="form-input" placeholder="Food Name" value={item.foodName} onChange={e => {
+                          const newMeals = {...dietForm.meals};
+                          newMeals[meal][idx].foodName = e.target.value;
+                          setDietForm({...dietForm, meals: newMeals});
+                        }} />
+                      </div>
+                      <input className="form-input" placeholder="Qty" value={item.quantity} onChange={e => {
+                        const newMeals = {...dietForm.meals};
+                        newMeals[meal][idx].quantity = e.target.value;
+                        setDietForm({...dietForm, meals: newMeals});
+                      }} />
+                      <input className="form-input" placeholder="Kcal" type="number" value={item.calories} onChange={e => {
+                        const newMeals = {...dietForm.meals};
+                        newMeals[meal][idx].calories = Number(e.target.value);
+                        setDietForm({...dietForm, meals: newMeals});
+                      }} />
+                    </div>
+                  ))}
+                  <button type="button" className="btn btn-secondary w-full" style={{ fontSize: '0.8rem', padding: '0.4rem' }} onClick={() => addMealItem(meal)}>+ Add Item</button>
+                </div>
+              ))}
+            </div>
           </div>
-          <button className="btn btn-primary w-full" type="submit">Save Template</button>
+          <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--clr-glass-border)', position: 'sticky', bottom: 0, background: 'var(--clr-bg-sidebar)', zIndex: 10 }}>
+            <button className="btn btn-primary w-full" type="submit">Save Template</button>
+          </div>
         </form>
       </Modal>
 
@@ -458,59 +514,63 @@ const MemberView: React.FC = () => {
   if (loading) return <div className="loading-state"><div className="spinner"></div></div>;
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '2rem' }}>
-      <div className="glass-panel" style={{ padding: '2rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-          <div className="stat-icon" style={{ background: 'rgba(139, 92, 246, 0.1)', color: 'var(--clr-primary)' }}>
-            <Dumbbell size={24} />
+    <div className="grid-cards" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))', gap: '1.5rem' }}>
+      <div className="glass-panel" style={{ padding: 'var(--sp-lg)', height: 'fit-content', minHeight: '300px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+          <div className="stat-icon" style={{ background: 'rgba(139, 92, 246, 0.1)', color: 'var(--clr-primary)', width: '40px', height: '40px', flexShrink: 0 }}>
+            <Dumbbell size={20} />
           </div>
-          <h2>My Workout Plan</h2>
+          <h2 style={{ fontSize: '1.25rem' }}>My Workout Plan</h2>
         </div>
         {!workout ? <p className="text-muted">No workout assigned yet.</p> : (
-          <div>
-            <h3 style={{ marginBottom: '1.5rem' }}>{workout.name}</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <h3 style={{ marginBottom: '0.5rem', color: 'var(--clr-text-main)' }}>{workout.name}</h3>
             {workout.days.map((day: any, i: number) => (
-              <div key={i} style={{ marginBottom: '2rem' }}>
-                <h4 style={{ color: 'var(--clr-primary)', marginBottom: '1rem' }}>{day.dayName}</h4>
-                {day.exercises.map((ex: any, j: number) => (
-                  <div key={j} style={{ padding: '1rem', borderBottom: '1px solid var(--clr-glass-border)', display: 'flex', justifyContent: 'space-between' }}>
-                    <div>
-                      <p style={{ fontWeight: 600 }}>{ex.name}</p>
-                      <p className="text-muted" style={{ fontSize: '0.8rem' }}>Rest: {ex.rest}</p>
+              <div key={i} className="glass-panel" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)' }}>
+                <h4 style={{ color: 'var(--clr-primary)', marginBottom: '1rem', borderBottom: '1px solid var(--clr-glass-border)', pb: '0.5rem' }}>{day.dayName}</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {day.exercises.map((ex: any, j: number) => (
+                    <div key={j} style={{ padding: '0.75rem', borderBottom: '1px solid var(--clr-glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.25rem', wordBreak: 'break-word' }}>{ex.name}</p>
+                        <p className="text-muted" style={{ fontSize: '0.75rem' }}>Rest: {ex.rest}</p>
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <p style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--clr-primary)' }}>{ex.sets} × {ex.reps}</p>
+                      </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <p style={{ fontWeight: 700 }}>{ex.sets} × {ex.reps}</p>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      <div className="glass-panel" style={{ padding: '2rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-          <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--clr-success)' }}>
-            <Utensils size={24} />
+      <div className="glass-panel" style={{ padding: 'var(--sp-lg)', height: 'fit-content', minHeight: '300px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+          <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--clr-success)', width: '40px', height: '40px', flexShrink: 0 }}>
+            <Utensils size={20} />
           </div>
-          <h2>My Diet Plan</h2>
+          <h2 style={{ fontSize: '1.25rem' }}>My Diet Plan</h2>
         </div>
         {!diet ? <p className="text-muted">No diet assigned yet.</p> : (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-              <h3>{diet.name}</h3>
-              <span className="status-badge active">{diet.calories} kcal</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <h3 style={{ color: 'var(--clr-text-main)' }}>{diet.name}</h3>
+              <span className="status-badge active" style={{ fontSize: '0.8rem' }}>{diet.calories} kcal</span>
             </div>
             {(['breakfast', 'lunch', 'dinner', 'snacks'] as const).map((meal) => (
-              <div key={meal} style={{ marginBottom: '1.5rem' }}>
-                <h4 style={{ textTransform: 'capitalize', marginBottom: '0.75rem', color: 'var(--clr-success)' }}>{meal}</h4>
-                {diet.meals[meal].map((item: any, i: number) => (
-                  <div key={i} style={{ padding: '0.75rem', borderBottom: '1px solid var(--clr-glass-border)', display: 'flex', justifyContent: 'space-between' }}>
-                    <p>{item.foodName}</p>
-                    <p className="text-muted">{item.quantity}</p>
-                  </div>
-                ))}
+              <div key={meal} className="glass-panel" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)' }}>
+                <h4 style={{ textTransform: 'capitalize', marginBottom: '1rem', color: 'var(--clr-success)', borderBottom: '1px solid var(--clr-glass-border)', pb: '0.5rem' }}>{meal}</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {diet.meals[meal].map((item: any, i: number) => (
+                    <div key={i} style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--clr-glass-border)', display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
+                      <p style={{ fontSize: '0.9rem', wordBreak: 'break-word' }}>{item.foodName}</p>
+                      <p className="text-muted" style={{ fontSize: '0.85rem', textAlign: 'right', flexShrink: 0 }}>{item.quantity}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>

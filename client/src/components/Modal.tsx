@@ -22,18 +22,35 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="glass-panel modal-content" onClick={(e) => e.stopPropagation()} style={{ 
-        width: '90%', 
-        maxWidth: '500px', 
-        padding: '2rem',
-        position: 'relative'
+        width: '95%', 
+        maxWidth: '600px', 
+        maxHeight: '90vh',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '1.5rem',
+        position: 'relative',
+        overflow: 'hidden'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: '1.5rem',
+          flexShrink: 0 
+        }}>
           <h2 style={{ fontSize: '1.25rem', fontWeight: '700' }}>{title}</h2>
           <button className="btn-icon" onClick={onClose}>
             <X size={20} />
           </button>
         </div>
-        {children}
+        <div style={{ 
+          overflowY: 'auto', 
+          flex: 1,
+          paddingRight: '0.5rem',
+          marginRight: '-0.5rem'
+        }}>
+          {children}
+        </div>
       </div>
     </div>
   );

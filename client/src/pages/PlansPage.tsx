@@ -160,74 +160,76 @@ const PlansPage: React.FC = () => {
       </div>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? "Edit Plan" : "Add New Plan"}>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label">Plan Name</label>
-            <input 
-              className="form-input" 
-              required 
-              value={formData.name}
-              onChange={e => setFormData({...formData, name: e.target.value})}
-              placeholder="e.g. Basic Monthly, Pro Yearly"
-            />
-          </div>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <div style={{ flex: 1 }}>
             <div className="form-group">
-              <label className="form-label">Price (₹)</label>
-              <div style={{ position: 'relative' }}>
-                <IndianRupee size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--clr-text-muted)' }} />
-                <input 
-                  className="form-input" 
-                  style={{ paddingLeft: '35px' }}
-                  type="number"
-                  required 
-                  min="0"
-                  value={formData.price}
-                  onChange={e => setFormData({...formData, price: Number(e.target.value)})}
-                />
-              </div>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Duration (Days)</label>
-              <div style={{ position: 'relative' }}>
-                <Clock size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--clr-text-muted)' }} />
-                <input 
-                  className="form-input" 
-                  style={{ paddingLeft: '35px' }}
-                  type="number"
-                  required 
-                  min="1"
-                  value={formData.duration}
-                  onChange={e => setFormData({...formData, duration: Number(e.target.value)})}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Plan Features</label>
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+              <label className="form-label">Plan Name</label>
               <input 
                 className="form-input" 
-                value={featureInput}
-                onChange={e => setFeatureInput(e.target.value)}
-                placeholder="Add a feature (e.g. Personal Trainer)..."
-                onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addFeature())}
+                required 
+                value={formData.name}
+                onChange={e => setFormData({...formData, name: e.target.value})}
+                placeholder="e.g. Basic Monthly, Pro Yearly"
               />
-              <button type="button" className="btn btn-secondary" onClick={addFeature}>Add</button>
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-              {formData.features.map((f, i) => (
-                <span key={i} className="status-badge active" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.8rem' }}>
-                  {f}
-                  <X size={14} style={{ cursor: 'pointer', opacity: 0.7 }} onClick={() => removeFeature(i)} />
-                </span>
-              ))}
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="form-group">
+                <label className="form-label">Price (₹)</label>
+                <div style={{ position: 'relative' }}>
+                  <IndianRupee size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--clr-text-muted)' }} />
+                  <input 
+                    className="form-input" 
+                    style={{ paddingLeft: '35px' }}
+                    type="number"
+                    required 
+                    min="0"
+                    value={formData.price}
+                    onChange={e => setFormData({...formData, price: Number(e.target.value)})}
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Duration (Days)</label>
+                <div style={{ position: 'relative' }}>
+                  <Clock size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--clr-text-muted)' }} />
+                  <input 
+                    className="form-input" 
+                    style={{ paddingLeft: '35px' }}
+                    type="number"
+                    required 
+                    min="1"
+                    value={formData.duration}
+                    onChange={e => setFormData({...formData, duration: Number(e.target.value)})}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Plan Features</label>
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                <input 
+                  className="form-input" 
+                  value={featureInput}
+                  onChange={e => setFeatureInput(e.target.value)}
+                  placeholder="Add a feature (e.g. Personal Trainer)..."
+                  onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addFeature())}
+                />
+                <button type="button" className="btn btn-secondary" onClick={addFeature}>Add</button>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                {formData.features.map((f, i) => (
+                  <span key={i} className="status-badge active" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.8rem' }}>
+                    {f}
+                    <X size={14} style={{ cursor: 'pointer', opacity: 0.7 }} onClick={() => removeFeature(i)} />
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
 
-          <div style={{ marginTop: '2rem' }}>
+          <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid var(--clr-glass-border)', position: 'sticky', bottom: 0, background: 'var(--clr-bg-sidebar)', zIndex: 10 }}>
             <button className="btn btn-primary w-full" type="submit" disabled={isSaving}>
               <Save size={18} />
               {isSaving ? 'Saving...' : (editingId ? 'Update Plan' : 'Create Plan')}

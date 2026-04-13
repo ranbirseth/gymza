@@ -7,6 +7,7 @@ const PaymentsPage: React.FC = () => {
   const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, pending: 0, pendingCount: 0 });
+  const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   
   // Invoice Modal State
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
@@ -90,7 +91,7 @@ const PaymentsPage: React.FC = () => {
         }
       `}</style>
       <div className="page-header" style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="flex-responsive" style={{ gap: '1rem' }}>
           <div>
             <h1>Offline Payments & Billing</h1>
             <p className="text-muted">Track cash collections and manual membership payments.</p>
@@ -101,104 +102,104 @@ const PaymentsPage: React.FC = () => {
       <div className="grid-stats">
         <div className="stat-card">
           <div className="stat-info">
-            <h3>Total Revenue (Collected)</h3>
-            <p className="stat-value">₹{stats.total.toLocaleString()}</p>
-            <p className="stat-trend trend-up">
-              <ArrowUpRight size={14} />
-              Confirmed cash payments
+            <h3 style={{ fontSize: '0.9rem' }}>Total Revenue</h3>
+            <p className="stat-value" style={{ fontSize: '1.5rem' }}>₹{stats.total.toLocaleString()}</p>
+            <p className="stat-trend trend-up" style={{ fontSize: '0.75rem' }}>
+              <ArrowUpRight size={12} />
+              Confirmed cash
             </p>
           </div>
-          <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--clr-success)' }}>
-            <IndianRupee size={24} />
+          <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--clr-success)', width: '40px', height: '40px' }}>
+            <IndianRupee size={20} />
           </div>
         </div>
         <div className="stat-card">
           <div className="stat-info">
-            <h3>Pending Dues</h3>
-            <p className="stat-value">₹{stats.pending.toLocaleString()}</p>
-            <p className="stat-trend trend-down">
-              <ArrowDownLeft size={14} />
-              {stats.pendingCount} members pending
+            <h3 style={{ fontSize: '0.9rem' }}>Pending Dues</h3>
+            <p className="stat-value" style={{ fontSize: '1.5rem' }}>₹{stats.pending.toLocaleString()}</p>
+            <p className="stat-trend trend-down" style={{ fontSize: '0.75rem' }}>
+              <ArrowDownLeft size={12} />
+              {stats.pendingCount} members
             </p>
           </div>
-          <div className="stat-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: 'var(--clr-warning)' }}>
-            <CreditCard size={24} />
+          <div className="stat-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: 'var(--clr-warning)', width: '40px', height: '40px' }}>
+            <CreditCard size={20} />
           </div>
         </div>
       </div>
 
       <div className="glass-panel" style={{ padding: '1.5rem', marginTop: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem' }}>
-          <div className="search-bar" style={{ width: '400px', background: 'var(--clr-bg-base)' }}>
-            <Search size={18} className="text-muted" />
-            <input placeholder="Search transactions by member or invoice..." />
-          </div>
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <button className="btn btn-secondary">
-              <Filter size={18} />
+        <div className="flex-responsive" style={{ marginBottom: '1.5rem', gap: '1rem' }}>
+          <div className="flex-responsive" style={{ gap: '0.75rem', justifyContent: 'flex-start', width: '100%', maxWidth: '500px' }}>
+            <div className="search-bar" style={{ flex: 1, minWidth: '150px', background: 'var(--clr-bg-base)', padding: '0.4rem 1rem' }}>
+              <Search size={16} className="text-muted" />
+              <input placeholder="Search transactions..." style={{ fontSize: '0.85rem' }} />
+            </div>
+            <button className="btn btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', flexShrink: 0 }}>
+              <Filter size={16} />
               Filter
             </button>
           </div>
         </div>
 
-        <div className="table-container" style={{ margin: 0 }}>
-          <table className="data-table">
+        <div className="table-container hide-on-mobile" style={{ margin: 0, borderRadius: '12px', border: '1px solid var(--clr-glass-border)' }}>
+          <table className="data-table" style={{ fontSize: '0.85rem' }}>
             <thead>
               <tr>
-                <th>Invoice #</th>
-                <th>Member</th>
-                <th>Plan</th>
-                <th>Amount</th>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Action</th>
+                <th style={{ padding: '0.75rem 1rem' }}>Invoice #</th>
+                <th style={{ padding: '0.75rem 1rem' }}>Member</th>
+                <th style={{ padding: '0.75rem 1rem' }}>Plan</th>
+                <th style={{ padding: '0.75rem 1rem' }}>Amount</th>
+                <th style={{ padding: '0.75rem 1rem' }}>Date</th>
+                <th style={{ padding: '0.75rem 1rem' }}>Status</th>
+                <th style={{ padding: '0.75rem 1rem' }}>Action</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} style={{ textAlign: 'center', padding: '2rem' }}>Loading transactions...</td></tr>
+                <tr><td colSpan={7} style={{ textAlign: 'center', padding: '3rem' }}><div className="spinner" style={{ margin: '0 auto' }}></div></td></tr>
               ) : payments.length === 0 ? (
-                <tr><td colSpan={7} style={{ textAlign: 'center', padding: '2rem' }}>No transactions recorded.</td></tr>
+                <tr><td colSpan={7} style={{ textAlign: 'center', padding: '3rem' }}><p className="text-muted">No transactions recorded.</p></td></tr>
               ) : payments.map((p) => (
                 <tr key={p._id}>
-                  <td>
-                    <span style={{ fontFamily: 'monospace', fontWeight: '600', color: 'var(--clr-primary)' }}>
+                  <td style={{ padding: '0.75rem 1rem' }}>
+                    <span style={{ fontFamily: 'monospace', fontWeight: '600', color: 'var(--clr-primary)', fontSize: '0.8rem' }}>
                       {p.invoiceNumber}
                     </span>
                   </td>
-                  <td>
+                  <td style={{ padding: '0.75rem 1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <div className="avatar" style={{ width: '32px', height: '32px', fontSize: '0.75rem' }}>
+                      <div className="avatar" style={{ width: '28px', height: '28px', fontSize: '0.7rem', flexShrink: 0 }}>
                         {(p.member?.user?.name || 'U').charAt(0)}
                       </div>
-                      <span style={{ fontWeight: '600' }}>{p.member?.user?.name || 'Unknown Member'}</span>
+                      <span style={{ fontWeight: '600', whiteSpace: 'nowrap' }}>{p.member?.user?.name || 'Unknown Member'}</span>
                     </div>
                   </td>
-                  <td>
-                    <span className="status-badge active" style={{ background: 'rgba(var(--clr-primary-rgb), 0.1)', color: 'var(--clr-primary)' }}>
+                  <td style={{ padding: '0.75rem 1rem' }}>
+                    <span className="status-badge active" style={{ background: 'rgba(var(--clr-primary-rgb), 0.1)', color: 'var(--clr-primary)', fontSize: '0.75rem', padding: '0.2rem 0.5rem', whiteSpace: 'nowrap' }}>
                       {p.plan?.name || 'Manual Payment'}
                     </span>
                   </td>
-                  <td>
+                  <td style={{ padding: '0.75rem 1rem' }}>
                     <div style={{ fontWeight: '700' }}>₹{(p.amount || 0).toLocaleString()}</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--clr-text-muted)', textTransform: 'capitalize' }}>Method: {p.method}</div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--clr-text-muted)', textTransform: 'capitalize' }}>{p.method}</div>
                   </td>
-                  <td>{new Date(p.date || p.createdAt).toLocaleDateString()}</td>
-                  <td>
+                  <td style={{ padding: '0.75rem 1rem', whiteSpace: 'nowrap' }}>{new Date(p.date || p.createdAt).toLocaleDateString()}</td>
+                  <td style={{ padding: '0.75rem 1rem' }}>
                     <button 
                       onClick={() => handleStatusChange(p._id, p.status)}
                       className={`status-badge ${p.status === 'paid' ? 'active' : 'pending'}`}
-                      style={{ border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}
+                      style={{ border: 'none', cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}
                       title={`Click to mark as ${p.status === 'paid' ? 'unpaid' : 'paid'}`}
                     >
-                      {p.status === 'paid' ? <CheckCircle size={12} style={{ marginRight: '4px' }} /> : <XCircle size={12} style={{ marginRight: '4px' }} />}
+                      {p.status === 'paid' ? <CheckCircle size={10} style={{ marginRight: '4px' }} /> : <XCircle size={10} style={{ marginRight: '4px' }} />}
                       {p.status}
                     </button>
                   </td>
-                  <td>
+                  <td style={{ padding: '0.75rem 1rem' }}>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button className="btn-icon" onClick={() => handleDownloadInvoice(p._id)} title="Download Invoice">
-                        <FileText size={16} />
+                      <button className="btn-icon" style={{ width: '28px', height: '28px' }} onClick={() => handleDownloadInvoice(p._id)} title="Download Invoice">
+                        <FileText size={14} />
                       </button>
                     </div>
                   </td>
@@ -206,6 +207,101 @@ const PaymentsPage: React.FC = () => {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Cards View */}
+        <div className="mobile-cards-container">
+          {loading ? (
+            <div className="text-center" style={{ padding: '2rem' }}>
+              <div className="spinner" style={{ margin: '0 auto' }}></div>
+            </div>
+          ) : payments.length > 0 ? (
+            payments.map((p) => {
+              const isExpanded = expandedCardId === p._id;
+              return (
+                <div 
+                  key={p._id} 
+                  className={`mobile-card ${isExpanded ? 'expanded' : ''}`}
+                  onClick={() => setExpandedCardId(isExpanded ? null : p._id)}
+                  style={{ cursor: 'pointer', transition: 'all 0.3s ease' }}
+                >
+                  <div className="mobile-card-row">
+                    <span className="mobile-card-label">Invoice</span>
+                    <span className="mobile-card-value" style={{ fontFamily: 'monospace', fontWeight: '600', color: 'var(--clr-primary)' }}>
+                      {p.invoiceNumber}
+                    </span>
+                  </div>
+                  <div className="mobile-card-row">
+                    <span className="mobile-card-label">Member</span>
+                    <div className="mobile-card-value" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div className="avatar" style={{ width: '24px', height: '24px', fontSize: '0.65rem' }}>
+                        {(p.member?.user?.name || 'U').charAt(0)}
+                      </div>
+                      <span>{p.member?.user?.name || 'Unknown'}</span>
+                    </div>
+                  </div>
+                  <div className="mobile-card-row">
+                    <span className="mobile-card-label">Amount</span>
+                    <div className="mobile-card-value">
+                      <div style={{ fontWeight: '700' }}>₹{(p.amount || 0).toLocaleString()}</div>
+                    </div>
+                  </div>
+
+                  {isExpanded && (
+                    <div style={{ marginTop: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', borderTop: '1px solid var(--clr-glass-border)', paddingTop: '0.85rem' }}>
+                      <div className="mobile-card-row">
+                        <span className="mobile-card-label">Plan</span>
+                        <span className="mobile-card-value">{p.plan?.name || 'Manual'}</span>
+                      </div>
+                      <div className="mobile-card-row">
+                        <span className="mobile-card-label">Date</span>
+                        <span className="mobile-card-value">{new Date(p.date || p.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <div className="mobile-card-row">
+                        <span className="mobile-card-label">Method</span>
+                        <span className="mobile-card-value" style={{ textTransform: 'capitalize' }}>{p.method}</span>
+                      </div>
+                      <div className="mobile-card-row">
+                        <span className="mobile-card-label">Status</span>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStatusChange(p._id, p.status);
+                          }}
+                          className={`status-badge ${p.status === 'paid' ? 'active' : 'pending'}`}
+                          style={{ border: 'none', cursor: 'pointer', fontSize: '0.7rem' }}
+                        >
+                          {p.status}
+                        </button>
+                      </div>
+                      <div style={{ marginTop: '0.5rem' }}>
+                        <button 
+                          className="btn btn-secondary w-full" 
+                          style={{ fontSize: '0.8rem', padding: '0.4rem' }} 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownloadInvoice(p._id);
+                          }}
+                        >
+                          <FileText size={14} /> View Invoice
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {!isExpanded && (
+                    <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--clr-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                        Click for more details <ArrowDownLeft size={10} style={{ transform: 'rotate(-45deg)' }} />
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          ) : (
+            <p className="text-center text-muted" style={{ padding: '2rem' }}>No transactions found.</p>
+          )}
         </div>
       </div>
 

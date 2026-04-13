@@ -165,7 +165,7 @@ const MembersPage: React.FC = () => {
   return (
     <div>
       <div className="page-header" style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="flex-responsive" style={{ gap: '1.5rem' }}>
           <div>
             <h1>Members Management</h1>
             <p className="text-muted">Manage member subscriptions, plans, and offline payments.</p>
@@ -177,116 +177,116 @@ const MembersPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="glass-panel" style={{ padding: '1.25rem', marginBottom: '2rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-        <div className="search-bar" style={{ flex: 1, minWidth: '300px' }}>
-          <Search size={18} className="text-muted" />
-          <input 
-            placeholder="Search members by name, email or phone..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+      <div className="flex-responsive" style={{ marginBottom: '2rem', gap: '1rem' }}>
+        <div className="flex-responsive" style={{ gap: '0.75rem', justifyContent: 'flex-start', width: '100%', maxWidth: '500px' }}>
+          <div className="search-bar" style={{ flex: 1, minWidth: '150px', background: 'var(--clr-bg-base)', padding: '0.4rem 1rem' }}>
+            <Search size={16} className="text-muted" />
+            <input 
+              placeholder="Search members..." 
+              style={{ fontSize: '0.85rem' }} 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <button className="btn btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', flexShrink: 0 }}>
+            <Filter size={16} />
+            Filters
+          </button>
         </div>
-        <button className="btn btn-secondary">
-          <Filter size={18} />
-          Filters
-        </button>
       </div>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add New Member">
-        <form onSubmit={handleCreateMember}>
-          <div className="form-group">
-            <label className="form-label">Full Name</label>
-            <input className="form-input" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+        <form onSubmit={handleCreateMember} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <div style={{ flex: 1 }}>
+            <div className="form-group">
+              <label className="form-label">Full Name</label>
+              <input className="form-input" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Email</label>
+              <input className="form-input" type="email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Phone Number</label>
+              <input className="form-input" type="tel" required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Password</label>
+              <input className="form-input" type="password" required value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Initial Plan (Optional)</label>
+              <select className="form-input" value={formData.planId} onChange={e => setFormData({...formData, planId: e.target.value})}>
+                <option value="">Select a plan</option>
+                {plans.map(p => <option key={p._id} value={p._id}>{p.name} - ₹{p.price}</option>)}
+              </select>
+            </div>
           </div>
-          <div className="form-group">
-            <label className="form-label">Email</label>
-            <input className="form-input" type="email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+          <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid var(--clr-glass-border)', position: 'sticky', bottom: 0, background: 'var(--clr-bg-sidebar)', zIndex: 10 }}>
+            <button className="btn btn-primary w-full" type="submit">Create Member</button>
           </div>
-          <div className="form-group">
-            <label className="form-label">Phone Number</label>
-            <input className="form-input" type="tel" required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Password</label>
-            <input className="form-input" type="password" required value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Initial Plan (Optional)</label>
-            <select className="form-input" value={formData.planId} onChange={e => setFormData({...formData, planId: e.target.value})}>
-              <option value="">Select a plan</option>
-              {plans.map(p => <option key={p._id} value={p._id}>{p.name} - ₹{p.price}</option>)}
-            </select>
-          </div>
-          <button className="btn btn-primary w-full" type="submit">Create Member</button>
         </form>
       </Modal>
 
       <Modal isOpen={isSubModalOpen} onClose={() => setIsSubModalOpen(false)} title="Subscription Management">
         {selectedMember && (
-          <div>
-            <div className="glass-panel" style={{ marginBottom: '1.5rem', padding: '1rem' }}>
-              <p>Member: <strong>{selectedMember.user?.name}</strong></p>
-              <p>Current Status: <span className={`status-badge ${selectedMember.status}`}>{selectedMember.status}</span></p>
-              <p>Payment: <span className={`status-badge ${selectedMember.paymentStatus === 'paid' ? 'active' : 'pending'}`}>{selectedMember.paymentStatus}</span></p>
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div style={{ flex: 1 }}>
+              <div className="glass-panel" style={{ marginBottom: '1.5rem', padding: '1rem' }}>
+                <p>Member: <strong>{selectedMember.user?.name}</strong></p>
+                <p>Status: <span className={`status-badge ${selectedMember.status}`}>{selectedMember.status}</span></p>
+                <p>Payment: <span className={`status-badge ${selectedMember.paymentStatus === 'paid' ? 'active' : 'pending'}`}>{selectedMember.paymentStatus}</span></p>
+              </div>
 
-            <div className="form-group">
-              <label className="form-label">Select Plan</label>
-              <select className="form-input" value={subFormData.planId} onChange={e => {
-                const plan = plans.find(p => p._id === e.target.value);
-                setSubFormData({...subFormData, planId: e.target.value, amount: plan?.price || 0});
-              }}>
-                <option value="">Select a plan</option>
-                {plans.map(p => <option key={p._id} value={p._id}>{p.name} - ₹{p.price} ({p.duration} days)</option>)}
-              </select>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
               <div className="form-group">
-                <label className="form-label">Amount (₹)</label>
-                <input className="form-input" type="number" value={subFormData.amount} onChange={e => setSubFormData({...subFormData, amount: Number(e.target.value)})} />
+                <label className="form-label">Select Plan</label>
+                <select className="form-input" value={subFormData.planId} onChange={e => {
+                  const plan = plans.find(p => p._id === e.target.value);
+                  setSubFormData({...subFormData, planId: e.target.value, amount: plan?.price || 0});
+                }}>
+                  <option value="">Select a plan</option>
+                  {plans.map(p => <option key={p._id} value={p._id}>{p.name} - ₹{p.price} ({p.duration} days)</option>)}
+                </select>
               </div>
-              <div className="form-group" style={{ display: 'flex', alignItems: 'center', paddingTop: '1.5rem' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={subFormData.recordPayment} onChange={e => setSubFormData({...subFormData, recordPayment: e.target.checked})} />
-                  Mark as Paid (Cash)
-                </label>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Amount (₹)</label>
+                  <input className="form-input" type="number" value={subFormData.amount} onChange={e => setSubFormData({...subFormData, amount: Number(e.target.value)})} />
+                </div>
+                <div className="form-group" style={{ display: 'flex', alignItems: 'center', paddingTop: '1.5rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={subFormData.recordPayment} 
+                      onChange={e => setSubFormData({...subFormData, recordPayment: e.target.checked})} 
+                    />
+                    <span style={{ fontSize: '0.85rem' }}>Mark as Paid</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Note (Optional)</label>
+                <textarea 
+                  className="form-input" 
+                  style={{ minHeight: '80px' }}
+                  value={subFormData.note} 
+                  onChange={e => setSubFormData({...subFormData, note: e.target.value})}
+                  placeholder="Payment or subscription note..."
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                <button className="btn btn-primary" onClick={() => handleSubscriptionAction('assign')}>Assign</button>
+                <button className="btn btn-secondary" onClick={() => handleSubscriptionAction('renew')}>Renew</button>
               </div>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Payment Note (Optional)</label>
-              <input className="form-input" value={subFormData.note} onChange={e => setSubFormData({...subFormData, note: e.target.value})} placeholder="e.g. Received cash at counter" />
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '2rem', flexWrap: 'wrap' }}>
-              {!selectedMember.currentPlan ? (
-                <button className="btn btn-primary flex-1" onClick={() => handleSubscriptionAction('assign')}>
-                  <Zap size={18} /> Assign Plan
-                </button>
-              ) : (
-                <>
-                  {selectedMember.status === 'frozen' ? (
-                    <button className="btn btn-primary flex-1" onClick={() => handleSubscriptionAction('resume')}>
-                      <PlayCircle size={18} /> Resume Plan
-                    </button>
-                  ) : (
-                    <button className="btn btn-primary flex-1" onClick={() => handleSubscriptionAction('renew')}>
-                      <RefreshCw size={18} /> Renew/Upgrade
-                    </button>
-                  )}
-                  
-                  {selectedMember.status === 'active' && (
-                    <button className="btn btn-secondary" onClick={() => handleSubscriptionAction('freeze')}>
-                      <Snowflake size={18} /> Freeze
-                    </button>
-                  )}
-                  
-                  <button className="btn btn-secondary" onClick={() => handleSubscriptionAction('cancel')} style={{ color: 'var(--clr-danger)' }}>
-                    Cancel
-                  </button>
-                </>
-              )}
+            <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid var(--clr-glass-border)', position: 'sticky', bottom: 0, background: 'var(--clr-bg-sidebar)', zIndex: 10, display: 'flex', gap: '0.75rem' }}>
+              <button className="btn btn-warning flex-1" onClick={() => handleSubscriptionAction('freeze')}>Freeze</button>
+              <button className="btn btn-success flex-1" onClick={() => handleSubscriptionAction('resume')}>Resume</button>
+              <button className="btn btn-danger flex-1" onClick={() => handleSubscriptionAction('cancel')}>Cancel</button>
             </div>
           </div>
         )}

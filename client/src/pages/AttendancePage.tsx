@@ -184,13 +184,14 @@ const AttendancePage: React.FC = () => {
       </div>
 
       <div className="glass-panel" style={{ padding: '1.5rem', marginTop: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div className="flex-responsive" style={{ marginBottom: '1.5rem', gap: '1rem' }}>
           <h3 style={{ fontSize: '1.1rem' }}>Attendance Log</h3>
-          <div style={{ display: 'flex', gap: '1rem', flex: 1, justifyContent: 'flex-end' }}>
-            <div className="search-bar" style={{ maxWidth: '300px', background: 'var(--clr-bg-base)' }}>
-              <Search size={18} className="text-muted" />
+          <div className="flex-responsive" style={{ gap: '0.75rem', justifyContent: 'flex-end', width: '100%', maxWidth: '500px' }}>
+            <div className="search-bar" style={{ flex: 1, minWidth: '150px', background: 'var(--clr-bg-base)', padding: '0.4rem 0.75rem' }}>
+              <Search size={16} className="text-muted" />
               <input 
                 placeholder="Search member..." 
+                style={{ fontSize: '0.85rem' }}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
@@ -198,48 +199,55 @@ const AttendancePage: React.FC = () => {
             <input 
               type="date" 
               className="form-input" 
-              style={{ width: 'auto' }}
+              style={{ width: 'auto', flexShrink: 0, padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
               value={dateFilter}
               onChange={e => setDateFilter(e.target.value)}
             />
           </div>
         </div>
 
-        <div className="table-container" style={{ margin: 0 }}>
-          <table className="data-table">
+        <div className="table-container hide-on-mobile" style={{ margin: 0, borderRadius: '12px', border: '1px solid var(--clr-glass-border)', overflowX: 'auto' }}>
+          <table className="data-table" style={{ fontSize: '0.9rem', width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th>Member Name</th>
-                <th>Check-in</th>
-                <th>Check-out</th>
-                <th>Date</th>
-                <th>Status</th>
+                <th style={{ padding: '1rem', textAlign: 'left' }}>Member Name</th>
+                <th style={{ padding: '1rem', textAlign: 'left' }}>Check-in</th>
+                <th style={{ padding: '1rem', textAlign: 'left' }}>Check-out</th>
+                <th style={{ padding: '1rem', textAlign: 'left' }}>Date</th>
+                <th style={{ padding: '1rem', textAlign: 'left' }}>Status</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="text-center" style={{ padding: '2rem' }}>Loading log...</td>
+                  <td colSpan={5} className="text-center" style={{ padding: '3rem' }}>
+                    <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
+                    Loading log...
+                  </td>
                 </tr>
               ) : attendance.length > 0 ? (
                 attendance.map((entry) => (
-                  <tr key={entry._id}>
-                    <td>
+                  <tr key={entry._id} style={{ borderBottom: '1px solid var(--clr-glass-border)' }}>
+                    <td style={{ padding: '0.75rem 1rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div className="avatar" style={{ width: '32px', height: '32px', fontSize: '0.75rem' }}>
+                        <div className="avatar" style={{ width: '32px', height: '32px', fontSize: '0.75rem', flexShrink: 0 }}>
                           {(entry.member?.user?.name || 'U').charAt(0)}
                         </div>
-                        <div>
-                          <p style={{ fontWeight: '600', marginBottom: 0 }}>{entry.member?.user?.name || 'Unknown'}</p>
-                          <p className="text-muted" style={{ fontSize: '0.7rem', marginBottom: 0 }}>ID: {entry.member?.secretCode}</p>
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ fontWeight: '600', marginBottom: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {entry.member?.user?.name || 'Unknown'}
+                          </p>
+                          <p className="text-muted" style={{ fontSize: '0.7rem', marginBottom: 0 }}>
+                            ID: {entry.member?.secretCode}
+                          </p>
                         </div>
                       </div>
                     </td>
-                    <td>{entry.checkIn ? format(new Date(entry.checkIn), 'hh:mm a') : '-'}</td>
-                    <td>{entry.checkOut ? format(new Date(entry.checkOut), 'hh:mm a') : '-'}</td>
-                    <td>{entry.date}</td>
-                    <td>
-                      <span className={`status-badge ${entry.status === 'completed' ? 'active' : 'pending'}`}>
+                    <td style={{ padding: '0.75rem 1rem' }}>{entry.checkIn ? format(new Date(entry.checkIn), 'hh:mm a') : '-'}</td>
+                    <td style={{ padding: '0.75rem 1rem' }}>{entry.checkOut ? format(new Date(entry.checkOut), 'hh:mm a') : '-'}</td>
+                    <td style={{ padding: '0.75rem 1rem', whiteSpace: 'nowrap' }}>{entry.date}</td>
+                    <td style={{ padding: '0.75rem 1rem' }}>
+                      <span className={`status-badge ${entry.status === 'completed' ? 'active' : 'pending'}`} style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}>
                         {entry.status}
                       </span>
                     </td>
@@ -247,11 +255,56 @@ const AttendancePage: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="text-center" style={{ padding: '2rem' }}>No attendance found for this selection.</td>
+                  <td colSpan={5} className="text-center" style={{ padding: '3rem' }}>
+                    <p className="text-muted">No attendance found for this selection.</p>
+                  </td>
                 </tr>
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Cards View */}
+        <div className="mobile-cards-container">
+          {loading ? (
+            <div className="text-center" style={{ padding: '2rem' }}>
+              <div className="spinner" style={{ margin: '0 auto' }}></div>
+            </div>
+          ) : attendance.length > 0 ? (
+            attendance.map((entry) => (
+              <div key={entry._id} className="mobile-card">
+                <div className="mobile-card-row">
+                  <span className="mobile-card-label">Member</span>
+                  <div className="mobile-card-value" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'flex-end', minWidth: 0 }}>
+                    <div className="avatar" style={{ width: '24px', height: '24px', fontSize: '0.65rem', flexShrink: 0 }}>
+                      {(entry.member?.user?.name || 'U').charAt(0)}
+                    </div>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.member?.user?.name || 'Unknown'}</span>
+                  </div>
+                </div>
+                <div className="mobile-card-row">
+                  <span className="mobile-card-label">Check-in</span>
+                  <span className="mobile-card-value">{entry.checkIn ? format(new Date(entry.checkIn), 'hh:mm a') : '-'}</span>
+                </div>
+                <div className="mobile-card-row">
+                  <span className="mobile-card-label">Check-out</span>
+                  <span className="mobile-card-value">{entry.checkOut ? format(new Date(entry.checkOut), 'hh:mm a') : '-'}</span>
+                </div>
+                <div className="mobile-card-row">
+                  <span className="mobile-card-label">Date</span>
+                  <span className="mobile-card-value">{entry.date}</span>
+                </div>
+                <div className="mobile-card-row">
+                  <span className="mobile-card-label">Status</span>
+                  <span className={`status-badge ${entry.status === 'completed' ? 'active' : 'pending'}`} style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem' }}>
+                    {entry.status}
+                  </span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-center text-muted" style={{ padding: '2rem' }}>No attendance found.</p>
+          )}
         </div>
       </div>
     </div>
