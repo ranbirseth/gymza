@@ -1,33 +1,532 @@
 import React, { useEffect, useState } from 'react';
-import { Dumbbell, Utensils, Zap, Clock, Plus, Trash2, ChevronDown, ChevronUp, Save, Search, UserPlus } from 'lucide-react';
+import { Dumbbell, Utensils, Zap, Clock, Plus, Trash2, Search, UserPlus, AlertTriangle, Calendar, CreditCard, FileText, CheckCircle2, LogOut, CalendarCheck, TrendingUp, Award, Download, RefreshCw } from 'lucide-react';
 import { getWorkoutTemplates, createWorkoutTemplate, deleteWorkoutPlan, assignWorkoutToMember, getMyWorkout } from '../features/workouts/workouts.api';
 import { getDietTemplates, createDietTemplate, deleteDietPlan, assignDietToMember, getMyDiet } from '../features/diets/diets.api';
-import { getMembers } from '../features/members/members.api';
+import { getMembers, getMyProfile } from '../features/members/members.api';
+import { getPayments } from '../features/payments/payments.api';
+import { markAttendance, getMyAttendance, getTodayAttendanceStatus, getMyAttendanceStats, exportMyAttendance } from '../features/attendance/attendance.api';
 import { useAuthStore } from '../store/auth.store';
 import Modal from '../components/Modal';
 
+const MemberView: React.FC = () => {
+  const [workout, setWorkout] = useState<any>(null);
+  const [diet, setDiet] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [attendance, setAttendance] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [todayAttendance, setTodayAttendance] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [markingAttendance, setMarkingAttendance] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const [attendanceStatusFilter, setAttendanceStatusFilter] = useState('all');
+  const [attendanceDateFilter, setAttendanceDateFilter] = useState({ start: '', end: '' });
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [activeSection, setActiveSection] = useState<'overview' | 'attendance'>('overview');
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [wRes, dRes, pRes, payRes, attRes, todayRes, statsRes] = await Promise.all([
+        getMyWorkout(),
+        getMyDiet(),
+        getMyProfile(),
+        getPayments(),
+        getMyAttendance({ status: attendanceStatusFilter !== 'all' ? attendanceStatusFilter : undefined }),
+        getTodayAttendanceStatus(),
+        getMyAttendanceStats()
+      ]);
+
+      setWorkout(wRes?.data?.data ?? null);
+      setDiet(dRes?.data?.data ?? null);
+      setProfile(pRes?.data?.data ?? null);
+      setPayments(payRes?.data?.data?.items || []);
+      setAttendance(attRes?.data?.data?.items || []);
+      setTodayAttendance(todayRes?.data?.data ?? null);
+      setStats(statsRes?.data?.data ?? null);
+    } catch (error) {
+      console.error("Failed to fetch member data", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [attendanceStatusFilter]);
+
+  const handleMarkAttendance = async (action: 'check-in' | 'check-out') => {
+    if (!profile?.secretCode) {
+      alert("Member code not found. Please contact admin.");
+      return;
+    }
+
+    setMarkingAttendance(true);
+    try {
+      const res = await markAttendance({ secretCode: profile.secretCode, action });
+      alert(res.data.message);
+      const [attRes, todayRes, statsRes] = await Promise.all([
+        getMyAttendance({ status: attendanceStatusFilter !== 'all' ? attendanceStatusFilter : undefined }),
+        getTodayAttendanceStatus(),
+        getMyAttendanceStats()
+      ]);
+      setAttendance(attRes?.data?.data?.items || []);
+      setTodayAttendance(todayRes?.data?.data ?? null);
+      setStats(statsRes?.data?.data ?? null);
+    } catch (error: any) {
+      alert(error.response?.data?.message || `Failed to ${action}`);
+    } finally {
+      setMarkingAttendance(false);
+    }
+  };
+
+  const handleExport = async (format: 'csv' | 'pdf') => {
+    setExporting(true);
+    try {
+      const res = await exportMyAttendance(format, attendanceDateFilter.start, attendanceDateFilter.end);
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `attendance_${new Date().toISOString().split('T')[0]}.${format}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      alert("Failed to export attendance data");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  if (loading) return <div className="loading-state"><div className="spinner"></div></div>;
+
+  const workoutDays = Array.isArray(workout?.days) ? workout.days : [];
+  const mealItems = (meal: 'breakfast' | 'lunch' | 'dinner' | 'snacks') => {
+    const meals = diet?.meals;
+    const items = meals && typeof meals === 'object' ? (meals as any)[meal] : undefined;
+    return Array.isArray(items) ? items : [];
+  };
+
+  const getDaysRemaining = () => {
+    if (!profile?.membershipExpiryDate) return null;
+    const expiry = new Date(profile.membershipExpiryDate);
+    const now = new Date();
+    const diffTime = expiry.getTime() - now.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const daysRemaining = getDaysRemaining();
+  const isPendingPayment = profile?.paymentStatus === 'pending';
+
+  const getStatusBadge = (status: string) => {
+    const statusMap: Record<string, { class: string; label: string }> = {
+      present: { class: 'pending', label: 'In Gym' },
+      completed: { class: 'active', label: 'Completed' },
+      absent: { class: 'inactive', label: 'Absent' },
+      late: { class: 'pending', label: 'Late' },
+      'half-day': { class: 'pending', label: 'Half Day' }
+    };
+    const { class: cls, label } = statusMap[status] || { class: 'pending', label: status };
+    return <span className={`status-badge ${cls}`}>{label}</span>;
+  };
+
+  const sortedAttendance = [...attendance].sort((a, b) => {
+    const dateA = new Date(a.date).getTime();
+    const dateB = new Date(b.date).getTime();
+    return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+  });
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--clr-glass-border)', paddingBottom: '0.5rem' }}>
+        <button
+          onClick={() => setActiveSection('overview')}
+          style={{
+            padding: '0.5rem 1rem',
+            borderRadius: '8px',
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: 600,
+            fontSize: '0.9rem',
+            background: activeSection === 'overview' ? 'var(--clr-accent-gradient)' : 'transparent',
+            color: activeSection === 'overview' ? 'white' : 'var(--clr-text-muted)'
+          }}
+        >
+          Overview
+        </button>
+        <button
+          onClick={() => setActiveSection('attendance')}
+          style={{
+            padding: '0.5rem 1rem',
+            borderRadius: '8px',
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: 600,
+            fontSize: '0.9rem',
+            background: activeSection === 'attendance' ? 'var(--clr-accent-gradient)' : 'transparent',
+            color: activeSection === 'attendance' ? 'white' : 'var(--clr-text-muted)'
+          }}
+        >
+          My Attendance
+        </button>
+      </div>
+
+      {activeSection === 'overview' ? (
+        <>
+          {stats && (
+            <div className="grid-cards" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+              <div className="glass-panel" style={{ padding: '1rem', textAlign: 'center' }}>
+                <TrendingUp size={24} style={{ color: 'var(--clr-success)', marginBottom: '0.5rem' }} />
+                <h3 style={{ fontSize: '1.75rem', fontWeight: 800 }}>{stats.presentDays || 0}</h3>
+                <p className="text-muted" style={{ fontSize: '0.75rem' }}>Total Sessions</p>
+              </div>
+              <div className="glass-panel" style={{ padding: '1rem', textAlign: 'center' }}>
+                <Award size={24} style={{ color: 'var(--clr-primary)', marginBottom: '0.5rem' }} />
+                <h3 style={{ fontSize: '1.75rem', fontWeight: 800 }}>{stats.attendanceRate || 0}%</h3>
+                <p className="text-muted" style={{ fontSize: '0.75rem' }}>Attendance Rate</p>
+              </div>
+              <div className="glass-panel" style={{ padding: '1rem', textAlign: 'center' }}>
+                <CalendarCheck size={24} style={{ color: '#f59e0b', marginBottom: '0.5rem' }} />
+                <h3 style={{ fontSize: '1.75rem', fontWeight: 800 }}>{stats.currentStreak || 0}</h3>
+                <p className="text-muted" style={{ fontSize: '0.75rem' }}>Current Streak</p>
+              </div>
+              <div className="glass-panel" style={{ padding: '1rem', textAlign: 'center' }}>
+                <Clock size={24} style={{ color: 'var(--clr-secondary)', marginBottom: '0.5rem' }} />
+                <h3 style={{ fontSize: '1.75rem', fontWeight: 800 }}>{stats.avgCheckInTime || 'N/A'}</h3>
+                <p className="text-muted" style={{ fontSize: '0.75rem' }}>Avg Check-In</p>
+              </div>
+            </div>
+          )}
+
+          <div className="glass-panel" style={{ padding: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div className="stat-icon" style={{ background: 'rgba(6, 182, 212, 0.1)', color: 'var(--clr-secondary)', width: '40px', height: '40px' }}>
+                  <CalendarCheck size={20} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '1.1rem' }}>Daily Attendance</h2>
+                  <p className="text-muted" style={{ fontSize: '0.75rem' }}>ID: {profile?.secretCode}</p>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Clock size={14} className="text-muted" />
+                <span className="text-muted" style={{ fontSize: '0.8rem' }}>
+                  {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {!todayAttendance ? (
+                <button
+                  className="btn btn-primary w-full"
+                  style={{ padding: '1rem', gap: '0.75rem', fontSize: '1rem' }}
+                  onClick={() => handleMarkAttendance('check-in')}
+                  disabled={markingAttendance}
+                >
+                  <CheckCircle2 size={22} />
+                  {markingAttendance ? 'Processing...' : 'Check In'}
+                </button>
+              ) : todayAttendance.status === 'present' ? (
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <div className="glass-panel" style={{ flex: 1, background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '0.75rem', textAlign: 'center' }}>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)', marginBottom: '0.25rem' }}>Check In</p>
+                    <p style={{ fontSize: '0.9rem', color: 'var(--clr-success)', fontWeight: 600 }}>
+                      {new Date(todayAttendance.checkIn).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                  <button
+                    className="btn btn-danger"
+                    style={{ flex: 1, padding: '0.75rem', gap: '0.5rem' }}
+                    onClick={() => handleMarkAttendance('check-out')}
+                    disabled={markingAttendance}
+                  >
+                    <LogOut size={18} />
+                    {markingAttendance ? 'Processing...' : 'Check Out'}
+                  </button>
+                </div>
+              ) : (
+                <div className="glass-panel" style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid var(--clr-success)', padding: '1.25rem', textAlign: 'center' }}>
+                  <CheckCircle2 size={28} style={{ color: 'var(--clr-success)', marginBottom: '0.5rem' }} />
+                  <h4 style={{ color: 'var(--clr-success)', marginBottom: '0.5rem' }}>Today's Session Complete</h4>
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', fontSize: '0.85rem' }}>
+                    <span className="text-muted">In: <strong style={{ color: 'var(--clr-text-main)' }}>{new Date(todayAttendance.checkIn).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</strong></span>
+                    <span className="text-muted">Out: <strong style={{ color: 'var(--clr-text-main)' }}>{todayAttendance.checkOut ? new Date(todayAttendance.checkOut).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '-'}</strong></span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {(isPendingPayment || (daysRemaining !== null && daysRemaining <= 5)) && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {isPendingPayment && (
+                <div className="glass-panel" style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <AlertTriangle style={{ color: '#fbbf24' }} size={24} />
+                    <div>
+                      <h4 style={{ color: '#fbbf24', fontSize: '1rem' }}>Payment Pending</h4>
+                      <p className="text-muted" style={{ fontSize: '0.85rem' }}>Clear dues to avoid service interruption</p>
+                    </div>
+                  </div>
+                  <button className="btn btn-warning" style={{ fontSize: '0.85rem' }}>Pay</button>
+                </div>
+              )}
+              {daysRemaining !== null && daysRemaining <= 5 && !isPendingPayment && (
+                <div className="glass-panel" style={{ background: daysRemaining <= 0 ? 'rgba(244, 63, 94, 0.1)' : 'rgba(139, 92, 246, 0.1)', border: `1px solid ${daysRemaining <= 0 ? 'rgba(244, 63, 94, 0.3)' : 'rgba(139, 92, 246, 0.3)'}`, padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <Clock size={24} style={{ color: daysRemaining <= 0 ? 'var(--clr-danger)' : 'var(--clr-primary)' }} />
+                    <div>
+                      <h4 style={{ color: daysRemaining <= 0 ? '#fb7185' : '#a78bfa', fontSize: '1rem' }}>{daysRemaining <= 0 ? 'Subscription Expired' : 'Expiring Soon'}</h4>
+                      <p className="text-muted" style={{ fontSize: '0.85rem' }}>{Math.abs(daysRemaining)} days {daysRemaining <= 0 ? 'overdue' : 'remaining'}</p>
+                    </div>
+                  </div>
+                  <button className="btn btn-primary" style={{ fontSize: '0.85rem' }}>Renew</button>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="grid-cards" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))', gap: '1.5rem' }}>
+            <div className="glass-panel" style={{ padding: 'var(--sp-lg)', height: 'fit-content', minHeight: '300px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div className="stat-icon" style={{ background: 'rgba(139, 92, 246, 0.1)', color: 'var(--clr-primary)', width: '40px', height: '40px', flexShrink: 0 }}>
+                  <Dumbbell size={20} />
+                </div>
+                <h2 style={{ fontSize: '1.25rem' }}>My Workout Plan</h2>
+              </div>
+              {!workout ? <p className="text-muted">No workout assigned yet.</p> : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <h3 style={{ marginBottom: '0.5rem', color: 'var(--clr-text-main)' }}>{workout.name}</h3>
+                  {workoutDays.map((day: any, i: number) => (
+                    <div key={i} className="glass-panel" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)' }}>
+                      <h4 style={{ color: 'var(--clr-primary)', marginBottom: '1rem', borderBottom: '1px solid var(--clr-glass-border)', paddingBottom: '0.5rem' }}>{day.dayName}</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {(Array.isArray(day?.exercises) ? day.exercises : []).map((ex: any, j: number) => (
+                          <div key={j} style={{ padding: '0.75rem', borderBottom: '1px solid var(--clr-glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+                            <div style={{ minWidth: 0 }}>
+                              <p style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.25rem', wordBreak: 'break-word' }}>{ex.name}</p>
+                              <p className="text-muted" style={{ fontSize: '0.75rem' }}>Rest: {ex.rest}</p>
+                            </div>
+                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                              <p style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--clr-primary)' }}>{ex.sets} × {ex.reps}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="glass-panel" style={{ padding: 'var(--sp-lg)', height: 'fit-content', minHeight: '300px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--clr-success)', width: '40px', height: '40px', flexShrink: 0 }}>
+                  <Utensils size={20} />
+                </div>
+                <h2 style={{ fontSize: '1.25rem' }}>My Diet Plan</h2>
+              </div>
+              {!diet ? <p className="text-muted">No diet assigned yet.</p> : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <h3 style={{ color: 'var(--clr-text-main)' }}>{diet.name}</h3>
+                    <span className="status-badge active" style={{ fontSize: '0.8rem' }}>{diet.calories} kcal</span>
+                  </div>
+                  {(['breakfast', 'lunch', 'dinner', 'snacks'] as const).map((meal) => (
+                    <div key={meal} className="glass-panel" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)' }}>
+                      <h4 style={{ textTransform: 'capitalize', marginBottom: '1rem', color: 'var(--clr-success)', borderBottom: '1px solid var(--clr-glass-border)', paddingBottom: '0.5rem' }}>{meal}</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {mealItems(meal).map((item: any, i: number) => (
+                          <div key={i} style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--clr-glass-border)', display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
+                            <p style={{ fontSize: '0.9rem', wordBreak: 'break-word' }}>{item.foodName}</p>
+                            <p className="text-muted" style={{ fontSize: '0.85rem', textAlign: 'right', flexShrink: 0 }}>{item.quantity}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="glass-panel" style={{ padding: 'var(--sp-lg)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+              <div className="stat-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: 'var(--clr-warning)', width: '40px', height: '40px' }}>
+                <CreditCard size={20} />
+              </div>
+              <h2 style={{ fontSize: '1.25rem' }}>Payment History</h2>
+            </div>
+            {payments.length === 0 ? (
+              <p className="text-muted">No payment records found.</p>
+            ) : (
+              <div className="table-container" style={{ marginTop: 0, border: 'none', background: 'transparent' }}>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Plan</th>
+                      <th>Amount</th>
+                      <th>Date</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payments.map((pay: any) => (
+                      <tr key={pay._id}>
+                        <td>
+                          <div style={{ fontWeight: 600 }}>{pay.plan?.name || 'Manual Payment'}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)' }}>INV-{pay._id.slice(-6).toUpperCase()}</div>
+                        </td>
+                        <td><span style={{ fontWeight: 700 }}>₹{pay.amount}</span></td>
+                        <td>{new Date(pay.date || pay.createdAt).toLocaleDateString('en-IN')}</td>
+                        <td>
+                          <span className={`status-badge ${pay.status === 'paid' ? 'active' : pay.status === 'pending' ? 'pending' : 'inactive'}`}>
+                            {pay.status}
+                          </span>
+                        </td>
+                        <td>
+                          <button className="btn-icon" title="View Invoice">
+                            <FileText size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        <div className="glass-panel" style={{ padding: 'var(--sp-lg)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div className="stat-icon" style={{ background: 'rgba(6, 182, 212, 0.1)', color: 'var(--clr-secondary)', width: '40px', height: '40px' }}>
+                <CalendarCheck size={20} />
+              </div>
+              <h2 style={{ fontSize: '1.25rem' }}>Attendance History</h2>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--clr-bg-base)', padding: '0.4rem 0.75rem', borderRadius: '8px', border: '1px solid var(--clr-glass-border)' }}>
+                <input
+                  type="date"
+                  value={attendanceDateFilter.start}
+                  onChange={(e) => setAttendanceDateFilter(prev => ({ ...prev, start: e.target.value }))}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--clr-text-main)', fontSize: '0.8rem', outline: 'none', colorScheme: 'dark' }}
+                />
+                <span className="text-muted" style={{ fontSize: '0.75rem' }}>to</span>
+                <input
+                  type="date"
+                  value={attendanceDateFilter.end}
+                  onChange={(e) => setAttendanceDateFilter(prev => ({ ...prev, end: e.target.value }))}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--clr-text-main)', fontSize: '0.8rem', outline: 'none', colorScheme: 'dark' }}
+                />
+              </div>
+
+              <select
+                className="filter-select"
+                style={{ background: 'var(--clr-bg-base)', border: '1px solid var(--clr-glass-border)', color: 'var(--clr-text-main)', padding: '0.4rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem', outline: 'none', cursor: 'pointer' }}
+                value={attendanceStatusFilter}
+                onChange={(e) => setAttendanceStatusFilter(e.target.value)}
+              >
+                <option value="all">All Status</option>
+                <option value="present">In Gym</option>
+                <option value="completed">Completed</option>
+                <option value="absent">Absent</option>
+                <option value="late">Late</option>
+                <option value="half-day">Half Day</option>
+              </select>
+
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '0.4rem 0.75rem', gap: '0.5rem', fontSize: '0.8rem' }}
+                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+              >
+                <RefreshCw size={14} />
+                {sortOrder === 'desc' ? 'Newest' : 'Oldest'}
+              </button>
+
+              <button
+                className="btn btn-primary"
+                style={{ padding: '0.4rem 0.75rem', gap: '0.5rem', fontSize: '0.8rem' }}
+                onClick={() => handleExport('csv')}
+                disabled={exporting}
+              >
+                <Download size={14} />
+                {exporting ? 'Exporting...' : 'Export CSV'}
+              </button>
+            </div>
+          </div>
+
+          {sortedAttendance.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '3rem' }}>
+              <CalendarCheck size={48} style={{ color: 'var(--clr-text-muted)', marginBottom: '1rem', opacity: 0.5 }} />
+              <p className="text-muted">No attendance records found.</p>
+              <p style={{ fontSize: '0.8rem', color: 'var(--clr-text-muted)', marginTop: '0.5rem' }}>Start by checking in today!</p>
+            </div>
+          ) : (
+            <div className="table-container" style={{ marginTop: 0, border: 'none', background: 'transparent' }}>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Check In</th>
+                    <th>Check Out</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedAttendance.map((record: any) => {
+                    const checkInDate = new Date(record.checkIn);
+                    const checkOutDate = record.checkOut ? new Date(record.checkOut) : null;
+                    const durationMs = checkOutDate ? checkOutDate.getTime() - checkInDate.getTime() : null;
+                    const durationStr = durationMs ? `${Math.floor(durationMs / 60000)} min` : '-';
+                    return (
+                      <tr key={record._id}>
+                        <td style={{ fontWeight: 600 }}>{new Date(record.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                        <td>{checkInDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</td>
+                        <td>{checkOutDate ? checkOutDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                        <td>{durationStr}</td>
+                        <td>{getStatusBadge(record.status)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const WorkoutsPage: React.FC = () => {
   const { user } = useAuthStore();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const isTrainer = user?.role === 'trainer';
-  
+
   const [activeTab, setActiveTab] = useState<'workouts' | 'diets'>('workouts');
   const [workoutTemplates, setWorkoutTemplates] = useState<any[]>([]);
   const [dietTemplates, setDietTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Modal States
+
   const [isWorkoutModalOpen, setIsWorkoutModalOpen] = useState(false);
   const [isDietModalOpen, setIsDietModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedTemplateForAssign, setSelectedTemplateForAssign] = useState<{ id: string, type: 'workout' | 'diet', name: string } | null>(null);
-  
-  // Assignment States
+
   const [members, setMembers] = useState<any[]>([]);
   const [memberSearch, setMemberSearch] = useState('');
   const [isAssigning, setIsAssigning] = useState(false);
 
-  // Form States - Workout
   const [workoutForm, setWorkoutForm] = useState({
     name: '',
     goal: 'General Fitness',
@@ -35,7 +534,6 @@ const WorkoutsPage: React.FC = () => {
     days: [{ dayName: 'Day 1', exercises: [{ name: '', sets: 3, reps: '12', rest: '60s' }] }]
   });
 
-  // Form States - Diet
   const [dietForm, setDietForm] = useState({
     name: '',
     goal: 'Maintenance',
@@ -55,7 +553,7 @@ const WorkoutsPage: React.FC = () => {
         getWorkoutTemplates(),
         getDietTemplates()
       ]);
-      
+
       if (wRes.status === 'fulfilled') {
         setWorkoutTemplates(wRes.value.data?.data || []);
       } else {
@@ -188,11 +686,11 @@ const WorkoutsPage: React.FC = () => {
           </div>
           <div style={{ display: 'flex', gap: '1rem' }}>
             {activeTab === 'workouts' ? (
-              isAdmin && <button className="btn btn-primary" onClick={() => setIsWorkoutModalOpen(true)}>
+              (isAdmin || isTrainer) && <button className="btn btn-primary" onClick={() => setIsWorkoutModalOpen(true)}>
                 <Plus size={18} /> Create Workout
               </button>
             ) : (
-              isAdmin && <button className="btn btn-primary" onClick={() => setIsDietModalOpen(true)}>
+              (isAdmin || isTrainer) && <button className="btn btn-primary" onClick={() => setIsDietModalOpen(true)}>
                 <Plus size={18} /> Create Diet
               </button>
             )}
@@ -201,13 +699,13 @@ const WorkoutsPage: React.FC = () => {
       </div>
 
       <div className="glass-panel" style={{ padding: '0.5rem', marginBottom: '2rem', display: 'inline-flex', gap: '0.5rem' }}>
-        <button 
+        <button
           className={`btn ${activeTab === 'workouts' ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => setActiveTab('workouts')}
         >
           <Dumbbell size={18} /> Workouts
         </button>
-        <button 
+        <button
           className={`btn ${activeTab === 'diets' ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => setActiveTab('diets')}
         >
@@ -228,8 +726,7 @@ const WorkoutsPage: React.FC = () => {
                     <span className="status-badge active" style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', flexShrink: 0 }}>{t.difficulty}</span>
                   </div>
                   <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '1rem' }}>Goal: {t.goal}</p>
-                  
-                  {/* Summary of exercises */}
+
                   <div style={{ flex: 1, marginBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--clr-primary)', fontSize: '0.85rem', marginBottom: '0.75rem', fontWeight: '600' }}>
                       <Zap size={14} /> {t.days?.length} Days Training
@@ -258,7 +755,7 @@ const WorkoutsPage: React.FC = () => {
                     }}>
                       <UserPlus size={16} /> Assign
                     </button>
-                    {isAdmin && (
+                    {(isAdmin || isTrainer) && (
                       <button className="btn btn-icon danger" style={{ width: '36px', height: '36px' }} onClick={() => deleteWorkoutPlan(t._id).then(fetchData)}>
                         <Trash2 size={16} />
                       </button>
@@ -281,8 +778,7 @@ const WorkoutsPage: React.FC = () => {
                     <span className="status-badge active" style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', flexShrink: 0 }}>{t.goal}</span>
                   </div>
                   <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '1rem' }}>Target: {t.calories} kcal</p>
-                  
-                  {/* Summary of meals */}
+
                   <div style={{ flex: 1, marginBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--clr-success)', fontSize: '0.85rem', marginBottom: '0.75rem', fontWeight: '600' }}>
                       <Utensils size={14} /> Meal Breakdown
@@ -313,7 +809,7 @@ const WorkoutsPage: React.FC = () => {
                     }}>
                       <UserPlus size={16} /> Assign
                     </button>
-                    {isAdmin && (
+                    {(isAdmin || isTrainer) && (
                       <button className="btn btn-icon danger" style={{ width: '36px', height: '36px' }} onClick={() => deleteDietPlan(t._id).then(fetchData)}>
                         <Trash2 size={16} />
                       </button>
@@ -331,7 +827,6 @@ const WorkoutsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Workout Create Modal */}
       <Modal isOpen={isWorkoutModalOpen} onClose={() => setIsWorkoutModalOpen(false)} title="Create Workout Template">
         <form onSubmit={handleCreateWorkout} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <div style={{ flex: 1 }}>
@@ -362,8 +857,8 @@ const WorkoutsPage: React.FC = () => {
             <div style={{ paddingRight: '0.5rem' }}>
               {workoutForm.days.map((day, dIdx) => (
                 <div key={dIdx} className="glass-panel" style={{ padding: '1rem', marginBottom: '1rem' }}>
-                  <input 
-                    className="form-input" 
+                  <input
+                    className="form-input"
                     style={{ fontWeight: 700, marginBottom: '1rem', background: 'transparent', border: 'none', borderBottom: '1px solid var(--clr-glass-border)', borderRadius: 0 }}
                     value={day.dayName}
                     onChange={e => {
@@ -404,14 +899,13 @@ const WorkoutsPage: React.FC = () => {
             </div>
             <button type="button" className="btn btn-secondary w-full mb-4" onClick={addWorkoutDay}>+ Add Day</button>
           </div>
-          
+
           <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--clr-glass-border)', position: 'sticky', bottom: 0, background: 'var(--clr-bg-sidebar)', zIndex: 10 }}>
             <button className="btn btn-primary w-full" type="submit">Save Template</button>
           </div>
         </form>
       </Modal>
 
-      {/* Diet Create Modal */}
       <Modal isOpen={isDietModalOpen} onClose={() => setIsDietModalOpen(false)} title="Create Diet Template">
         <form onSubmit={handleCreateDiet} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <div style={{ flex: 1 }}>
@@ -470,7 +964,6 @@ const WorkoutsPage: React.FC = () => {
         </form>
       </Modal>
 
-      {/* Assign Modal */}
       <Modal isOpen={isAssignModalOpen} onClose={() => setIsAssignModalOpen(false)} title={`Assign ${selectedTemplateForAssign?.name}`}>
         <div className="form-group">
           <label className="form-label">Search Member</label>
@@ -493,100 +986,6 @@ const WorkoutsPage: React.FC = () => {
           ))}
         </div>
       </Modal>
-    </div>
-  );
-};
-
-const MemberView: React.FC = () => {
-  const [workout, setWorkout] = useState<any>(null);
-  const [diet, setDiet] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    Promise.all([getMyWorkout(), getMyDiet()])
-      .then(([wRes, dRes]) => {
-        setWorkout(wRes?.data?.data ?? null);
-        setDiet(dRes?.data?.data ?? null);
-      })
-      .catch(() => {
-        setWorkout(null);
-        setDiet(null);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) return <div className="loading-state"><div className="spinner"></div></div>;
-
-  const workoutDays = Array.isArray(workout?.days) ? workout.days : [];
-  const mealItems = (meal: 'breakfast' | 'lunch' | 'dinner' | 'snacks') => {
-    const meals = diet?.meals;
-    const items = meals && typeof meals === 'object' ? (meals as any)[meal] : undefined;
-    return Array.isArray(items) ? items : [];
-  };
-
-  return (
-    <div className="grid-cards" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))', gap: '1.5rem' }}>
-      <div className="glass-panel" style={{ padding: 'var(--sp-lg)', height: 'fit-content', minHeight: '300px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-          <div className="stat-icon" style={{ background: 'rgba(139, 92, 246, 0.1)', color: 'var(--clr-primary)', width: '40px', height: '40px', flexShrink: 0 }}>
-            <Dumbbell size={20} />
-          </div>
-          <h2 style={{ fontSize: '1.25rem' }}>My Workout Plan</h2>
-        </div>
-        {!workout ? <p className="text-muted">No workout assigned yet.</p> : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--clr-text-main)' }}>{workout.name}</h3>
-            {workoutDays.map((day: any, i: number) => (
-              <div key={i} className="glass-panel" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)' }}>
-                <h4 style={{ color: 'var(--clr-primary)', marginBottom: '1rem', borderBottom: '1px solid var(--clr-glass-border)', paddingBottom: '0.5rem' }}>{day.dayName}</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {(Array.isArray(day?.exercises) ? day.exercises : []).map((ex: any, j: number) => (
-                    <div key={j} style={{ padding: '0.75rem', borderBottom: '1px solid var(--clr-glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
-                      <div style={{ minWidth: 0 }}>
-                        <p style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.25rem', wordBreak: 'break-word' }}>{ex.name}</p>
-                        <p className="text-muted" style={{ fontSize: '0.75rem' }}>Rest: {ex.rest}</p>
-                      </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <p style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--clr-primary)' }}>{ex.sets} × {ex.reps}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="glass-panel" style={{ padding: 'var(--sp-lg)', height: 'fit-content', minHeight: '300px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-          <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--clr-success)', width: '40px', height: '40px', flexShrink: 0 }}>
-            <Utensils size={20} />
-          </div>
-          <h2 style={{ fontSize: '1.25rem' }}>My Diet Plan</h2>
-        </div>
-        {!diet ? <p className="text-muted">No diet assigned yet.</p> : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <h3 style={{ color: 'var(--clr-text-main)' }}>{diet.name}</h3>
-              <span className="status-badge active" style={{ fontSize: '0.8rem' }}>{diet.calories} kcal</span>
-            </div>
-            {(['breakfast', 'lunch', 'dinner', 'snacks'] as const).map((meal) => (
-              <div key={meal} className="glass-panel" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)' }}>
-                <h4 style={{ textTransform: 'capitalize', marginBottom: '1rem', color: 'var(--clr-success)', borderBottom: '1px solid var(--clr-glass-border)', paddingBottom: '0.5rem' }}>{meal}</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {mealItems(meal).map((item: any, i: number) => (
-                    <div key={i} style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--clr-glass-border)', display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
-                      <p style={{ fontSize: '0.9rem', wordBreak: 'break-word' }}>{item.foodName}</p>
-                      <p className="text-muted" style={{ fontSize: '0.85rem', textAlign: 'right', flexShrink: 0 }}>{item.quantity}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
 };

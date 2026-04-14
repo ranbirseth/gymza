@@ -4,9 +4,14 @@ import { getMembers, createMember, deleteMember, assignPlan, renewPlan, cancelPl
 import { getPlans } from '../features/plans/plans.api';
 import { recordPayment } from '../features/payments/payments.api';
 import { useDebounce } from '../hooks/useDebounce';
+import { useAuthStore } from '../store/auth.store';
 import Modal from '../components/Modal';
 
 const MembersPage: React.FC = () => {
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const isTrainer = user?.role === 'trainer';
+
   const [members, setMembers] = useState<any[]>([]);
   const [plans, setPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -14,6 +19,7 @@ const MembersPage: React.FC = () => {
   const [isSubModalOpen, setIsSubModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
   const debouncedSearch = useDebounce(searchQuery, 500);
   const [formData, setFormData] = useState({ 
     name: '', 
@@ -30,10 +36,12 @@ const MembersPage: React.FC = () => {
     recordPayment: true
   });
 
-  const fetchMembers = async (search = '') => {
+  const fetchMembers = async (search = '', status = 'all') => {
     setLoading(true);
     try {
-      const res = await getMembers({ search, limit: 100 });
+      const params: any = { search, limit: 100 };
+      if (status !== 'all') params.status = status;
+      const res = await getMembers(params);
       setMembers(res.data?.data?.items || []);
     } catch (error) {
       console.error('Failed to fetch members', error);
@@ -54,8 +62,8 @@ const MembersPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchMembers(debouncedSearch);
-  }, [debouncedSearch]);
+    fetchMembers(debouncedSearch, filterStatus);
+  }, [debouncedSearch, filterStatus]);
 
   useEffect(() => {
     fetchPlans();
@@ -170,10 +178,12 @@ const MembersPage: React.FC = () => {
             <h1>Members Management</h1>
             <p className="text-muted">Manage member subscriptions, plans, and offline payments.</p>
           </div>
-          <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
-            <Plus size={18} />
-            Add Member
-          </button>
+          {(isAdmin || isTrainer) && (
+            <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
+              <Plus size={18} />
+              Add Member
+            </button>
+          )}
         </div>
       </div>
 
@@ -188,10 +198,31 @@ const MembersPage: React.FC = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <button className="btn btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', flexShrink: 0 }}>
-            <Filter size={16} />
-            Filters
-          </button>
+          <div className="filter-container" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--clr-bg-base)', padding: '0.4rem 1rem', borderRadius: '12px', border: '1px solid var(--clr-glass-border)', cursor: 'pointer' }}>
+            <Filter size={16} className="text-muted" />
+            <select 
+              className="filter-select" 
+              style={{ 
+                background: 'transparent', 
+                border: 'none', 
+                color: 'var(--clr-text-main)', 
+                fontSize: '0.85rem',
+                outline: 'none',
+                cursor: 'pointer',
+                paddingRight: '1rem'
+              }}
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
+              <option value="all">Filter: All Members</option>
+              <option value="active">Filter: Active</option>
+              <option value="pending">Filter: Pending Approval</option>
+              <option value="expired">Filter: Expired</option>
+              <option value="frozen">Filter: Frozen</option>
+              <option value="cancelled">Filter: Cancelled</option>
+              <option value="inactive">Filter: Inactive</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -337,9 +368,11 @@ const MembersPage: React.FC = () => {
                     <CreditCard size={14} /> Subscription
                   </button>
                 )}
-                <button className="btn-icon" onClick={() => handleDeleteMember(member._id)} style={{ color: 'var(--clr-danger)' }} title="Delete Member Permanently">
-                  <Trash2 size={14} />
-                </button>
+                {(isAdmin || isTrainer) && (
+                  <button className="btn-icon" onClick={() => handleDeleteMember(member._id)} style={{ color: 'var(--clr-danger)' }} title="Delete Member Permanently">
+                    <Trash2 size={14} />
+                  </button>
+                )}
               </div>
             </div>
           ))}

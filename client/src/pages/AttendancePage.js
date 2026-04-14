@@ -44,7 +44,7 @@ const AttendancePage = () => {
             return alert('Please select a member');
         setIsSaving(true);
         try {
-            await manualCheckIn({ member: formData.memberId });
+            await manualCheckIn({ memberId: formData.memberId, action: 'check-in' });
             setIsModalOpen(false);
             setFormData({ memberId: '' });
             fetchAttendance();

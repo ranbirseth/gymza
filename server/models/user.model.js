@@ -12,7 +12,9 @@ const userSchema = new mongoose.Schema(
     photo: String,
     status: { type: String, enum: ["pending", "active", "inactive"], default: "active", index: true },
     specialty: { type: String, trim: true },
-    refreshTokens: [{ type: String }]
+    refreshTokens: [{ type: String }],
+    resetPasswordToken: { type: String },
+    resetPasswordExpire: { type: Date }
   },
   { timestamps: true }
 );

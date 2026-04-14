@@ -20,20 +20,20 @@ const {
 } = require("../controllers/member.controller");
 
 router.use(protect);
-router.get("/", authorize("superadmin", "admin", "trainer"), listMembers);
-router.get("/search", authorize("superadmin", "admin", "trainer"), searchMembers);
-router.post("/", authorize("superadmin", "admin"), upload.single("photo"), createMember);
+router.get("/", authorize("view_member"), listMembers);
+router.get("/search", authorize("view_member"), searchMembers);
+router.post("/", authorize("create_member"), upload.single("photo"), createMember);
 router.get("/profile/me", authorize("member"), getMyProfile);
 router.patch("/profile/me", authorize("member"), upload.single("photo"), updateMyProfile);
-router.get("/:id", authorize("superadmin", "admin", "trainer", "member"), getMember);
-router.put("/:id", authorize("superadmin", "admin", "trainer"), upload.single("photo"), updateMember);
-router.delete("/:id", authorize("superadmin", "admin"), deleteMember);
-router.patch("/:id/assign-plan", authorize("superadmin", "admin", "trainer"), assignPlan);
-router.patch("/:id/renew-plan", authorize("superadmin", "admin", "trainer"), renewPlan);
-router.patch("/:id/upgrade-plan", authorize("superadmin", "admin", "trainer"), upgradePlan);
-router.patch("/:id/cancel-plan", authorize("superadmin", "admin", "trainer"), cancelPlan);
-router.patch("/:id/freeze-plan", authorize("superadmin", "admin", "trainer"), freezePlan);
-router.patch("/:id/resume-plan", authorize("superadmin", "admin", "trainer"), resumePlan);
-router.patch("/:id/approve", authorize("superadmin", "admin", "trainer"), approveMember);
+router.get("/:id", authorize("view_member", "member"), getMember);
+router.put("/:id", authorize("update_member"), upload.single("photo"), updateMember);
+router.delete("/:id", authorize("delete_member"), deleteMember);
+router.patch("/:id/assign-plan", authorize("manage_plans"), assignPlan);
+router.patch("/:id/renew-plan", authorize("manage_plans"), renewPlan);
+router.patch("/:id/upgrade-plan", authorize("manage_plans"), upgradePlan);
+router.patch("/:id/cancel-plan", authorize("manage_plans"), cancelPlan);
+router.patch("/:id/freeze-plan", authorize("manage_plans"), freezePlan);
+router.patch("/:id/resume-plan", authorize("manage_plans"), resumePlan);
+router.patch("/:id/approve", authorize("approve_member"), approveMember);
 
 module.exports = router;

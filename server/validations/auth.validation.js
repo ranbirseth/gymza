@@ -29,4 +29,20 @@ const refreshSchema = z.object({
   params: z.object({}).passthrough()
 });
 
-module.exports = { signupSchema, loginSchema, refreshSchema };
+const forgotPasswordSchema = z.object({
+  body: z.object({
+    email: z.string().email(),
+    gymId: z.string().min(1)
+  })
+});
+
+const resetPasswordSchema = z.object({
+  params: z.object({
+    token: z.string().min(1)
+  }),
+  body: z.object({
+    password: z.string().min(6)
+  })
+});
+
+module.exports = { signupSchema, loginSchema, refreshSchema, forgotPasswordSchema, resetPasswordSchema };

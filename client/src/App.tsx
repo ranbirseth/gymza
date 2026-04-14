@@ -12,11 +12,14 @@ import "./styles/components.css";
 
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const SignupPage = lazy(() => import("./pages/SignupPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const MembersPage = lazy(() => import("./pages/MembersPage"));
 const TrainersPage = lazy(() => import("./pages/TrainersPage"));
 const PlansPage = lazy(() => import("./pages/PlansPage"));
 const AttendancePage = lazy(() => import("./pages/AttendancePage"));
+const MemberAttendancePage = lazy(() => import("./pages/MemberAttendancePage"));
 const WorkoutsPage = lazy(() => import("./pages/WorkoutsPage"));
 const PaymentsPage = lazy(() => import("./pages/PaymentsPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
@@ -48,6 +51,8 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
           <Route path="/pending-approval" element={<PendingApprovalPage />} />
           <Route path="/account-inactive" element={<DiscardedPage />} />
           <Route path="/access-restricted" element={<AccessRestrictedPage />} />
@@ -56,9 +61,9 @@ function App() {
           <Route
             path="/"
             element={
-              <ProtectedRoute roles={["admin", "trainer", "member"]}>
+              <ProtectedRoute roles={["superadmin", "admin", "trainer", "member"]}>
                 <AppLayout>
-                  {user?.role === "member" ? <Navigate to="/workouts" replace /> : <DashboardPage />}
+                  {user?.role === "member" ? <Navigate to="/my-attendance" replace /> : <DashboardPage />}
                 </AppLayout>
               </ProtectedRoute>
             }
@@ -67,7 +72,7 @@ function App() {
           <Route
             path="/members"
             element={
-              <ProtectedRoute roles={["admin", "trainer"]}>
+              <ProtectedRoute roles={["superadmin", "admin", "trainer"]}>
                 <AppLayout>
                   <MembersPage />
                 </AppLayout>
@@ -78,7 +83,7 @@ function App() {
           <Route
             path="/trainers"
             element={
-              <ProtectedRoute roles={["admin"]}>
+              <ProtectedRoute roles={["superadmin", "admin"]}>
                 <AppLayout>
                   <TrainersPage />
                 </AppLayout>
@@ -89,7 +94,7 @@ function App() {
           <Route
             path="/plans"
             element={
-              <ProtectedRoute roles={["admin"]}>
+              <ProtectedRoute roles={["superadmin", "admin"]}>
                 <AppLayout>
                   <PlansPage />
                 </AppLayout>
@@ -100,7 +105,7 @@ function App() {
           <Route
             path="/attendance"
             element={
-              <ProtectedRoute roles={["admin", "trainer"]}>
+              <ProtectedRoute roles={["superadmin", "admin", "trainer"]}>
                 <AppLayout>
                   <AttendancePage />
                 </AppLayout>
@@ -109,9 +114,20 @@ function App() {
           />
 
           <Route
+            path="/my-attendance"
+            element={
+              <ProtectedRoute roles={["member"]}>
+                <AppLayout>
+                  <MemberAttendancePage />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path="/workouts"
             element={
-              <ProtectedRoute roles={["admin", "trainer", "member"]}>
+              <ProtectedRoute roles={["superadmin", "admin", "trainer", "member"]}>
                 <AppLayout>
                   <WorkoutsPage />
                 </AppLayout>
@@ -122,7 +138,7 @@ function App() {
           <Route
             path="/payments"
             element={
-              <ProtectedRoute roles={["admin", "member"]}>
+              <ProtectedRoute roles={["superadmin", "admin", "member"]}>
                 <AppLayout>
                   <PaymentsPage />
                 </AppLayout>
@@ -133,7 +149,7 @@ function App() {
           <Route
             path="/settings"
             element={
-              <ProtectedRoute roles={["admin", "trainer", "member"]}>
+              <ProtectedRoute roles={["superadmin", "admin", "trainer", "member"]}>
                 <AppLayout>
                   <SettingsPage />
                 </AppLayout>
@@ -144,7 +160,7 @@ function App() {
           <Route
             path="/profile"
             element={
-              <ProtectedRoute roles={["admin", "trainer", "member"]}>
+              <ProtectedRoute roles={["superadmin", "admin", "trainer", "member"]}>
                 <AppLayout>
                   <ProfilePage />
                 </AppLayout>

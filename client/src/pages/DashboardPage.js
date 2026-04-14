@@ -16,7 +16,7 @@ export default function DashboardPage() {
         recentActivities: []
     });
     useEffect(() => {
-        if (user?.role === "admin" || user?.role === "trainer") {
+        if (user?.role === "admin" || user?.role === "trainer" || user?.role === "superadmin") {
             getDashboardStats()
                 .then((res) => {
                 if (res.data?.data) {

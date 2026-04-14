@@ -22,6 +22,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         { name: 'Trainers', path: '/trainers', icon: _jsx(UserSquare2, { size: 20 }), roles: ['admin'] },
         { name: 'Plans', path: '/plans', icon: _jsx(ClipboardList, { size: 20 }), roles: ['admin'] },
         { name: 'Attendance', path: '/attendance', icon: _jsx(CalendarCheck, { size: 20 }), roles: ['admin', 'trainer'] },
+        { name: 'My Attendance', path: '/my-attendance', icon: _jsx(CalendarCheck, { size: 20 }), roles: ['member'] },
         { name: 'Workouts & Diet', path: '/workouts', icon: _jsx(Dumbbell, { size: 20 }), roles: ['admin', 'trainer', 'member'] },
         { name: 'Payments', path: '/payments', icon: _jsx(CreditCard, { size: 20 }), roles: ['admin', 'member'] },
     ];

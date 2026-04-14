@@ -32,9 +32,38 @@ const protect = async (req, _res, next) => {
   }
 };
 
-const authorize = (...roles) => (req, _res, next) => {
-  if (!req.user || (req.user.role !== "superadmin" && !roles.includes(req.user.role))) {
-    return next(Object.assign(new Error("Forbidden"), { statusCode: 403 }));
+const authorize = (...requiredPermissions) => (req, _res, next) => {
+  if (!req.user) {
+    return next(Object.assign(new Error("Unauthorized"), { statusCode: 401 }));
+  }
+
+  // Superadmin bypass
+  if (req.user.role === "superadmin") return next();
+
+  // Role to permissions mapping
+  const rolePermissions = {
+    admin: [
+      "create_workout", "assign_workout", "delete_workout", "view_workout",
+      "create_diet", "assign_diet", "delete_diet", "view_diet",
+      "create_member", "delete_member", "update_member", "view_member", "approve_member",
+      "manage_plans", "view_payments", "manage_payments"
+    ],
+    trainer: [
+      "create_workout", "assign_workout", "view_workout", "delete_workout",
+      "create_diet", "assign_diet", "view_diet", "delete_diet",
+      "create_member", "delete_member", "update_member", "view_member", "approve_member", "manage_plans"
+    ],
+    member: ["view_own_data"]
+  };
+
+  const userPermissions = rolePermissions[req.user.role] || [];
+  
+  // Check if user has all required permissions or if the role is explicitly allowed (for backward compatibility)
+  const hasPermissions = requiredPermissions.every(p => userPermissions.includes(p));
+  const hasRole = requiredPermissions.includes(req.user.role);
+
+  if (!hasPermissions && !hasRole) {
+    return next(Object.assign(new Error("Forbidden: Insufficient permissions"), { statusCode: 403 }));
   }
   next();
 };

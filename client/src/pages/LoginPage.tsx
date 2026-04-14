@@ -179,7 +179,7 @@ export default function LoginPage() {
                 <input type="checkbox" style={{ accentColor: 'var(--clr-primary)' }} />
                 <span>Remember me</span>
               </label>
-              <a href="#" style={{ fontSize: '0.85rem', color: 'var(--clr-primary)', fontWeight: '600' }}>Forgot Password?</a>
+              <Link to="/forgot-password" style={{ fontSize: '0.85rem', color: 'var(--clr-primary)', fontWeight: '600', textDecoration: 'none' }}>Forgot Password?</Link>
             </div>
 
             <button 

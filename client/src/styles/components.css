@@ -61,6 +61,42 @@
     border-color: var(--clr-danger);
 }
 
+.btn-warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.btn-warning:hover {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.5);
+    color: #fcd34d;
+}
+
+.btn-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #6ee7b7;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.btn-success:hover {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.5);
+    color: #a7f3d0;
+}
+
+.btn-danger {
+    background: rgba(244, 63, 94, 0.1);
+    color: #fda4af;
+    border: 1px solid rgba(244, 63, 94, 0.3);
+}
+
+.btn-danger:hover {
+    background: rgba(244, 63, 94, 0.2);
+    border-color: rgba(244, 63, 94, 0.5);
+    color: #fecdd3;
+}
+
 /* Badges */
 .status-badge {
     padding: 0.25rem 0.75rem;
@@ -244,6 +280,11 @@ select.form-input option {
 }
 
 /* Modal Overlay & Content */
+.filter-select option {
+    background-color: #1a1c2e;
+    color: white;
+}
+
 .modal-overlay {
     position: fixed;
     top: 0;

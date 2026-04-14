@@ -5,7 +5,7 @@ type User = {
   _id: string; 
   name: string; 
   email: string; 
-  role: "admin" | "trainer" | "member";
+  role: "superadmin" | "admin" | "trainer" | "member";
   status: "active" | "pending" | "inactive" | "expired" | "cancelled" | "frozen";
   paymentStatus: "paid" | "pending";
 } | null;

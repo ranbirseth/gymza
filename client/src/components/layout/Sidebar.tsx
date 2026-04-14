@@ -40,6 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { name: 'Trainers', path: '/trainers', icon: <UserSquare2 size={20} />, roles: ['admin'] },
     { name: 'Plans', path: '/plans', icon: <ClipboardList size={20} />, roles: ['admin'] },
     { name: 'Attendance', path: '/attendance', icon: <CalendarCheck size={20} />, roles: ['admin', 'trainer'] },
+    { name: 'My Attendance', path: '/my-attendance', icon: <CalendarCheck size={20} />, roles: ['member'] },
     { name: 'Workouts & Diet', path: '/workouts', icon: <Dumbbell size={20} />, roles: ['admin', 'trainer', 'member'] },
     { name: 'Payments', path: '/payments', icon: <CreditCard size={20} />, roles: ['admin', 'member'] },
   ];

@@ -14,9 +14,9 @@ router.use(protect);
 router.get("/my-diet", authorize("member"), getMemberDiet);
 
 // Admin/Trainer routes
-router.get("/templates", authorize("admin", "trainer"), getDietTemplates);
-router.post("/templates", authorize("admin"), createDietTemplate);
-router.delete("/:id", authorize("admin"), deleteDietPlan);
-router.post("/assign", authorize("trainer", "admin"), assignDietToMember);
+router.get("/templates", authorize("view_diet"), getDietTemplates);
+router.post("/templates", authorize("create_diet"), createDietTemplate);
+router.delete("/:id", authorize("delete_diet"), deleteDietPlan);
+router.post("/assign", authorize("assign_diet"), assignDietToMember);
 
 module.exports = router;

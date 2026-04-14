@@ -2,7 +2,7 @@ import { Navigate } from "react-router-dom";
 import { ReactNode } from "react";
 import { useAuthStore } from "../store/auth.store";
 
-type Props = { children: ReactNode; roles?: Array<"admin" | "trainer" | "member"> };
+type Props = { children: ReactNode; roles?: Array<"superadmin" | "admin" | "trainer" | "member"> };
 
 export default function ProtectedRoute({ children, roles }: Props) {
   const { user, accessToken } = useAuthStore();

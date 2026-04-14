@@ -14,9 +14,9 @@ router.use(protect);
 router.get("/my-workout", authorize("member"), getMemberWorkout);
 
 // Admin/Trainer routes
-router.get("/templates", authorize("admin", "trainer"), getWorkoutTemplates);
-router.post("/templates", authorize("admin"), createWorkoutTemplate);
-router.delete("/:id", authorize("admin"), deleteWorkoutPlan);
-router.post("/assign", authorize("trainer", "admin"), assignWorkoutToMember);
+router.get("/templates", authorize("view_workout"), getWorkoutTemplates);
+router.post("/templates", authorize("create_workout"), createWorkoutTemplate);
+router.delete("/:id", authorize("delete_workout"), deleteWorkoutPlan);
+router.post("/assign", authorize("assign_workout"), assignWorkoutToMember);
 
 module.exports = router;
