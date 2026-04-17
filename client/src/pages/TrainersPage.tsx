@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { UserSquare2, Star, Users, Plus, Edit2, Trash2, Save, Search, Mail, Shield, Phone } from 'lucide-react';
+import { UserSquare2, Star, Users, Plus, Edit2, Trash2, Save, Search, Mail, Shield, Phone, ExternalLink, Calendar, Zap } from 'lucide-react';
 import { getTrainers, createTrainer, deleteTrainer, updateTrainer } from '../features/trainers/trainers.api';
+import { getMembers } from '../features/members/members.api';
 import { useDebounce } from '../hooks/useDebounce';
 import Modal from '../components/Modal';
 
@@ -8,10 +9,15 @@ const TrainersPage: React.FC = () => {
   const [trainers, setTrainers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery, 400);
+  const [selectedTrainer, setSelectedTrainer] = useState<any>(null);
+  const [trainerMembers, setTrainerMembers] = useState<any[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+
   const [formData, setFormData] = useState({ 
     name: '', 
     specialty: '', 
@@ -32,6 +38,22 @@ const TrainersPage: React.FC = () => {
       setTrainers([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleViewMembers = async (trainer: any) => {
+    setSelectedTrainer(trainer);
+    setIsMemberModalOpen(true);
+    setLoadingMembers(true);
+    try {
+      const res = await getMembers({ trainerId: trainer._id, limit: 100 });
+      const memberData = res.data?.data;
+      setTrainerMembers(Array.isArray(memberData) ? memberData : (memberData?.items || []));
+    } catch (error) {
+      console.error('Failed to fetch trainer members', error);
+      setTrainerMembers([]);
+    } finally {
+      setLoadingMembers(false);
     }
   };
 
@@ -282,7 +304,11 @@ const TrainersPage: React.FC = () => {
                   )}
                 </div>
 
-                <button className="btn btn-secondary w-full" style={{ justifyContent: 'center' }}>
+                <button 
+                  className="btn btn-secondary w-full" 
+                  style={{ justifyContent: 'center' }}
+                  onClick={() => handleViewMembers(trainer)}
+                >
                   <Users size={16} />
                   View Members
                 </button>
@@ -291,6 +317,56 @@ const TrainersPage: React.FC = () => {
           ))}
         </div>
       )}
+
+      <Modal 
+        isOpen={isMemberModalOpen} 
+        onClose={() => setIsMemberModalOpen(false)} 
+        title={`Members assigned to ${selectedTrainer?.user?.name || selectedTrainer?.name || 'Trainer'}`}
+      >
+        {loadingMembers ? (
+          <div className="loading-state" style={{ padding: '2rem', textAlign: 'center' }}>
+            <div className="spinner"></div>
+            <p className="text-muted" style={{ marginTop: '1rem' }}>Fetching members...</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '60vh', overflowY: 'auto', padding: '0.5rem' }}>
+            {trainerMembers.length === 0 ? (
+              <div className="text-center" style={{ padding: '2rem' }}>
+                <p className="text-muted">No members assigned to this trainer yet.</p>
+              </div>
+            ) : (
+              trainerMembers.map((member) => (
+                <div key={member._id} className="glass-panel" style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div className="avatar" style={{ width: '40px', height: '40px', fontSize: '1rem' }}>
+                    {member.user?.name?.charAt(0)}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontWeight: '600', fontSize: '0.95rem' }}>{member.user?.name}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.25rem' }}>
+                      <span className={`status-badge ${member.status}`} style={{ fontSize: '0.65rem', padding: '0.15rem 0.5rem' }}>
+                        {member.status}
+                      </span>
+                      <span className="text-muted" style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <Zap size={10} className="text-primary" />
+                        {member.currentPlan?.name || 'No Plan'}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <p className="text-muted" style={{ fontSize: '0.7rem', textTransform: 'uppercase' }}>Joined</p>
+                    <p style={{ fontSize: '0.8rem' }}>{new Date(member.createdAt).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+        <div style={{ marginTop: '2rem', borderTop: '1px solid var(--clr-glass-border)', paddingTop: '1rem' }}>
+          <button className="btn btn-secondary w-full" onClick={() => setIsMemberModalOpen(false)}>
+            Close
+          </button>
+        </div>
+      </Modal>
       
       {!loading && filteredTrainers.length === 0 && (
         <div className="glass-panel text-center" style={{ padding: '4rem' }}>

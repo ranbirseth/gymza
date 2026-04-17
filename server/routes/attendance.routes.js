@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const { protect, authorize } = require("../middlewares/auth.middleware");
+const { protect, protectOptional, authorize } = require("../middlewares/auth.middleware");
 const {
   markAttendance,
   memberCheckIn,
@@ -17,7 +17,7 @@ const {
   faceVerifyPlaceholder
 } = require("../controllers/attendance.controller");
 
-router.post("/mark", markAttendance);
+router.post("/mark", protectOptional, markAttendance);
 
 router.use(protect);
 

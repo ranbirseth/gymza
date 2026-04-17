@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Dumbbell, Utensils, Zap, Clock, Plus, Trash2, Search, UserPlus, AlertTriangle, Calendar, CreditCard, FileText, CheckCircle2, LogOut, CalendarCheck, TrendingUp, Award, Download, RefreshCw } from 'lucide-react';
+import { Dumbbell, Utensils, Zap, Clock, Plus, Trash2, Search, UserPlus, AlertTriangle, Calendar, CreditCard, FileText, CheckCircle2, LogOut, CalendarCheck, TrendingUp, Award, Download, RefreshCw, UserSquare2, Mail, Phone } from 'lucide-react';
 import { getWorkoutTemplates, createWorkoutTemplate, deleteWorkoutPlan, assignWorkoutToMember, getMyWorkout } from '../features/workouts/workouts.api';
 import { getDietTemplates, createDietTemplate, deleteDietPlan, assignDietToMember, getMyDiet } from '../features/diets/diets.api';
 import { getMembers, getMyProfile } from '../features/members/members.api';
@@ -43,7 +43,9 @@ const MemberView: React.FC = () => {
 
       setWorkout(wRes?.data?.data ?? null);
       setDiet(dRes?.data?.data ?? null);
-      setProfile(pRes?.data?.data ?? null);
+      const profileData = pRes?.data?.data ?? null;
+      setProfile(profileData);
+      console.log("Member Dashboard Profile Data:", profileData);
       setPayments(payRes?.data?.data?.items || []);
       setAttendance(attRes?.data?.data?.items || []);
       setTodayAttendance(todayRes?.data?.data ?? null);
@@ -284,66 +286,53 @@ const MemberView: React.FC = () => {
               )}
             </div>
 
-            {/* Daily Attendance Section */}
-            <div className="glass-panel" style={{ padding: '1.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <div className="stat-icon" style={{ background: 'rgba(6, 182, 212, 0.1)', color: 'var(--clr-secondary)', width: '40px', height: '40px' }}>
-                    <CalendarCheck size={20} />
-                  </div>
-                  <div>
-                    <h2 style={{ fontSize: '1.1rem' }}>Daily Attendance</h2>
-                    <p className="text-muted" style={{ fontSize: '0.75rem' }}>ID: {profile?.secretCode}</p>
-                  </div>
+            {/* My Trainer Section */}
+            <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div className="stat-icon" style={{ background: 'rgba(6, 182, 212, 0.1)', color: 'var(--clr-secondary)', width: '40px', height: '40px' }}>
+                  <UserSquare2 size={20} />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Clock size={14} className="text-muted" />
-                  <span className="text-muted" style={{ fontSize: '0.8rem' }}>
-                    {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-                  </span>
+                <div>
+                  <h2 style={{ fontSize: '1.1rem' }}>My Trainer</h2>
+                  <p className="text-muted" style={{ fontSize: '0.75rem' }}>Personal Coach</p>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {!todayAttendance ? (
-                  <button
-                    className="btn btn-primary w-full"
-                    style={{ padding: '1rem', gap: '0.75rem', fontSize: '1rem' }}
-                    onClick={() => handleMarkAttendance('check-in')}
-                    disabled={markingAttendance}
-                  >
-                    <CheckCircle2 size={22} />
-                    {markingAttendance ? 'Processing...' : 'Check In'}
+              {profile?.trainer ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div className="avatar" style={{ width: '50px', height: '50px', fontSize: '1.25rem' }}>
+                      {profile.trainer.name?.charAt(0) || profile.trainer.user?.name?.charAt(0) || 'T'}
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>{profile.trainer.name || profile.trainer.user?.name || 'Unknown Trainer'}</h3>
+                      <p style={{ color: 'var(--clr-secondary)', fontSize: '0.85rem', fontWeight: 500 }}>{profile.trainer.specialty || 'Personal Trainer'}</p>
+                    </div>
+                  </div>
+
+                  <div className="glass-panel" style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <Mail size={14} className="text-muted" />
+                      <span style={{ fontSize: '0.85rem' }}>{profile.trainer.email || profile.trainer.user?.email || 'N/A'}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <Phone size={14} className="text-muted" />
+                      <span style={{ fontSize: '0.85rem' }}>{profile.trainer.phone || profile.trainer.user?.phone || 'N/A'}</span>
+                    </div>
+                  </div>
+
+                  <button className="btn btn-secondary w-full" style={{ fontSize: '0.85rem', gap: '0.5rem' }}>
+                    <Mail size={16} />
+                    Message Trainer
                   </button>
-                ) : todayAttendance.status === 'present' ? (
-                  <div style={{ display: 'flex', gap: '0.75rem' }}>
-                    <div className="glass-panel" style={{ flex: 1, background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '0.75rem', textAlign: 'center' }}>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)', marginBottom: '0.25rem' }}>Check In</p>
-                      <p style={{ fontSize: '0.9rem', color: 'var(--clr-success)', fontWeight: 600 }}>
-                        {new Date(todayAttendance.checkIn).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                    <button
-                      className="btn btn-danger"
-                      style={{ flex: 1, padding: '0.75rem', gap: '0.5rem' }}
-                      onClick={() => handleMarkAttendance('check-out')}
-                      disabled={markingAttendance}
-                    >
-                      <LogOut size={18} />
-                      {markingAttendance ? 'Processing...' : 'Check Out'}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="glass-panel" style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid var(--clr-success)', padding: '1.25rem', textAlign: 'center' }}>
-                    <CheckCircle2 size={28} style={{ color: 'var(--clr-success)', marginBottom: '0.5rem' }} />
-                    <h4 style={{ color: 'var(--clr-success)', marginBottom: '0.5rem' }}>Today's Session Complete</h4>
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', fontSize: '0.85rem' }}>
-                      <span className="text-muted">In: <strong style={{ color: 'var(--clr-text-main)' }}>{new Date(todayAttendance.checkIn).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</strong></span>
-                      <span className="text-muted">Out: <strong style={{ color: 'var(--clr-text-main)' }}>{todayAttendance.checkOut ? new Date(todayAttendance.checkOut).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '-'}</strong></span>
-                    </div>
-                  </div>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '1.5rem' }}>
+                  <UserPlus size={32} style={{ color: 'var(--clr-secondary)', opacity: 0.5, marginBottom: '0.5rem' }} />
+                  <p className="text-muted">No trainer assigned yet.</p>
+                  <p style={{ fontSize: '0.75rem', marginTop: '0.5rem' }}>Contact admin to get a personal coach.</p>
+                </div>
+              )}
             </div>
           </div>
 

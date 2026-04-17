@@ -33,14 +33,13 @@ const generateUniqueSecretCode = async () => {
 };
 
 const createMember = asyncHandler(async (req, res) => {
-  const { name, email, phone, password, trainer, planId, membershipStartDate, branchCode = "MAIN" } = req.body;
+  const { name, email, phone, password, trainerId, planId, membershipStartDate, branchCode = "MAIN" } = req.body;
   const photo = req.file ? `/uploads/${req.file.filename}` : undefined;
   const gymId = req.gymId;
 
   const user = await User.create({ gymId, name, email, phone, password, role: "member", photo });
   
   let membershipExpiryDate = null;
-  let status = "pending";
   if (planId) {
     const plan = await Plan.findOne({ _id: planId, gymId });
     const start = membershipStartDate ? new Date(membershipStartDate) : new Date();
@@ -54,11 +53,11 @@ const createMember = asyncHandler(async (req, res) => {
   const member = await Member.create({
     gymId,
     user: user._id,
-    trainer,
+    trainer: trainerId || null,
     currentPlan: planId || null,
     membershipStartDate: membershipStartDate || new Date(),
     membershipExpiryDate,
-    isActivePlan: false, // Becomes active only after payment
+    isActivePlan: false,
     status: "pending",
     paymentStatus: "pending",
     secretCode,
@@ -74,6 +73,11 @@ const fetchMembers = async (query, gymId) => {
   // Status filter logic
   if (query.status && query.status !== "all") {
     branchFilter.status = query.status;
+  }
+
+  // Trainer filter logic
+  if (query.trainerId) {
+    branchFilter.trainer = new mongoose.Types.ObjectId(query.trainerId);
   }
 
   const q = query.search
@@ -137,23 +141,86 @@ const getMember = asyncHandler(async (req, res) => {
   sendResponse(res, { message: "Member fetched", data: member });
 });
 
+const AuditLog = require("../models/audit.model");
+const mongoose = require("mongoose");
+
 const updateMember = asyncHandler(async (req, res) => {
-  const member = await Member.findOne({ _id: req.params.id, gymId: req.gymId });
-  if (!member) throw Object.assign(new Error("Member not found in your gym"), { statusCode: 404 });
-  const { name, phone, email, password, ...memberPayload } = req.body;
-  const photo = req.file ? `/uploads/${req.file.filename}` : undefined;
-  
-  if (name || phone || email || photo || password) {
-    const userUpdate = { ...(name && { name }), ...(phone && { phone }), ...(email && { email }), ...(photo && { photo }), ...(password && { password }) };
-    const user = await User.findById(member.user);
-    if (user) {
-      Object.assign(user, userUpdate);
-      await user.save(); // Using save() instead of findByIdAndUpdate to trigger password hashing middleware
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const member = await Member.findOne({ _id: req.params.id, gymId: req.gymId }).session(session);
+    if (!member) throw Object.assign(new Error("Member not found in your gym"), { statusCode: 404 });
+
+    const { name, phone, email, password, reason, trainerId, ...memberPayload } = req.body;
+    const photo = req.file ? `/uploads/${req.file.filename}` : undefined;
+
+    const oldMemberValues = member.toObject();
+    let oldUserValues = null;
+
+    if (name || phone || email || photo || password || memberPayload.status) {
+      const user = await User.findById(member.user).session(session);
+      if (user) {
+        oldUserValues = user.toObject();
+        const userUpdate = {
+          ...(name && { name }),
+          ...(phone && { phone }),
+          ...(email && { email }),
+          ...(photo && { photo }),
+          ...(password && { password }),
+        };
+
+        if (memberPayload.status === 'inactive') {
+          user.status = 'inactive';
+          user.refreshTokens = []; // Immediate session termination
+        } else if (memberPayload.status === 'active') {
+          user.status = 'active';
+        }
+
+        Object.assign(user, userUpdate);
+        await user.save({ session });
+      }
     }
+
+    if (trainerId !== undefined) {
+      member.trainer = trainerId || null;
+    }
+
+    Object.assign(member, memberPayload);
+    await member.save({ session });
+
+    // Audit Logging
+    await AuditLog.create([{
+      gymId: req.gymId,
+      targetId: member._id,
+      targetType: "Member",
+      action: memberPayload.status === 'inactive' ? "DEACTIVATE_MEMBER" : "UPDATE_MEMBER",
+      performedBy: req.user._id,
+      oldValues: { member: oldMemberValues, user: oldUserValues },
+      newValues: { member: member.toObject(), status: memberPayload.status },
+      reason: reason || (memberPayload.status === 'inactive' ? "Administrative deactivation" : "Profile update")
+    }], { session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    if (req.app.locals.io) {
+      req.app.locals.io.to(req.gymId).emit("member:updated", {
+        memberId: member._id,
+        status: member.status,
+        action: memberPayload.status === 'inactive' ? "deactivated" : "updated"
+      });
+    }
+
+    sendResponse(res, { 
+      message: memberPayload.status === 'inactive' ? "Member deactivated successfully" : "Member updated", 
+      data: await member.populate("user trainer currentPlan") 
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
   }
-  Object.assign(member, memberPayload);
-  await member.save();
-  sendResponse(res, { message: "Member updated", data: await member.populate("user trainer currentPlan") });
 });
 
 const deleteMember = asyncHandler(async (req, res) => {

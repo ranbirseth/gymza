@@ -9,7 +9,12 @@ export default function ProtectedRoute({ children, roles }: Props) {
   
   if (!accessToken || !user) return <Navigate to="/login" replace />;
   
-  // Strict check for members: redirection to specific status pages
+  // Strict check for all roles: redirection if inactive
+  if (user.status === "inactive") {
+    return <Navigate to="/account-inactive" replace />;
+  }
+
+  // Role specific checks
   if (user.role === "member") {
     if (user.status === "pending") {
       return <Navigate to="/pending-approval" replace />;
@@ -17,7 +22,7 @@ export default function ProtectedRoute({ children, roles }: Props) {
     if (user.status === "inactive") {
       return <Navigate to="/account-inactive" replace />;
     }
-    if (user.status === "expired" || user.status === "frozen" || user.paymentStatus === "pending") {
+    if (user.status === "expired" || user.status === "frozen" || user.status === "cancelled" || user.paymentStatus === "pending") {
       return <Navigate to="/access-restricted" replace />;
     }
   }

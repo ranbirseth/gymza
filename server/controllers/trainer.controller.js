@@ -22,15 +22,43 @@ const createTrainer = asyncHandler(async (req, res) => {
   });
 });
 
+const AuditLog = require("../models/audit.model");
+
 const updateTrainer = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  const { status, ...otherData } = req.body;
+  
+  const updatePayload = { ...otherData };
+  if (status) {
+    updatePayload.status = status;
+    // If deactivating, clear all sessions
+    if (status === 'inactive') {
+      updatePayload.refreshTokens = [];
+    }
+  }
+
+  const oldTrainer = await User.findOne({ _id: id, gymId: req.gymId, role: "trainer" });
+  if (!oldTrainer) throw Object.assign(new Error("Trainer not found"), { statusCode: 404 });
+
   const trainer = await User.findOneAndUpdate(
     { _id: id, gymId: req.gymId, role: "trainer" },
-    { $set: req.body },
+    { $set: updatePayload },
     { new: true, runValidators: true }
   ).select("-password -refreshTokens");
   
-  if (!trainer) throw Object.assign(new Error("Trainer not found"), { statusCode: 404 });
+  // Audit Logging for status change
+  if (status && status !== oldTrainer.status) {
+    await AuditLog.create({
+      gymId: req.gymId,
+      targetId: trainer._id,
+      targetType: "Trainer",
+      action: status === 'inactive' ? "DEACTIVATE_TRAINER" : "REACTIVATE_TRAINER",
+      performedBy: req.user._id,
+      oldValues: { status: oldTrainer.status },
+      newValues: { status: trainer.status },
+      reason: req.body.reason || "Administrative update"
+    });
+  }
   
   sendResponse(res, { message: "Trainer updated", data: trainer });
 });

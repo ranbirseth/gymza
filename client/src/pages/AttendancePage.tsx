@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getAttendance, manualCheckIn } from '../features/attendance/attendance.api';
 import { getMembers } from '../features/members/members.api';
-import { Calendar, Plus, Clock, CheckCircle2, XCircle, Save, Search, UserCheck, QrCode, Download } from 'lucide-react';
+import { Calendar, Plus, Clock, CheckCircle2, XCircle, Save, Search, UserCheck, QrCode, Download, LogOut } from 'lucide-react';
 import { useDebounce } from '../hooks/useDebounce';
 import Modal from '../components/Modal';
 import { format } from 'date-fns';
@@ -43,20 +43,24 @@ const AttendancePage: React.FC = () => {
     }).catch(() => setMembers([]));
   }, []);
 
-  const handleMarkAttendance = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.memberId) return alert('Please select a member');
+  const handleManualAction = async (memberId: string, action: 'check-in' | 'check-out') => {
     setIsSaving(true);
     try {
-      await manualCheckIn({ memberId: formData.memberId, action: 'check-in' });
-      setIsModalOpen(false);
-      setFormData({ memberId: '' });
+      await manualCheckIn({ memberId, action });
       fetchAttendance();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to mark attendance');
+      alert(error.response?.data?.message || `Failed to ${action}`);
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleMarkAttendance = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.memberId) return alert('Please select a member');
+    await handleManualAction(formData.memberId, 'check-in');
+    setIsModalOpen(false);
+    setFormData({ memberId: '' });
   };
 
   const stats = {
@@ -215,12 +219,13 @@ const AttendancePage: React.FC = () => {
                 <th style={{ padding: '1rem', textAlign: 'left' }}>Check-out</th>
                 <th style={{ padding: '1rem', textAlign: 'left' }}>Date</th>
                 <th style={{ padding: '1rem', textAlign: 'left' }}>Status</th>
+                <th style={{ padding: '1rem', textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="text-center" style={{ padding: '3rem' }}>
+                  <td colSpan={6} className="text-center" style={{ padding: '3rem' }}>
                     <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
                     Loading log...
                   </td>
@@ -251,11 +256,23 @@ const AttendancePage: React.FC = () => {
                         {entry.status}
                       </span>
                     </td>
+                    <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
+                      {(entry.status === 'present' || entry.status === 'late') && !entry.checkOut && (
+                        <button 
+                          className="btn btn-secondary btn-icon" 
+                          title="Check Out"
+                          onClick={() => handleManualAction(entry.member._id, 'check-out')}
+                          disabled={isSaving}
+                        >
+                          <LogOut size={14} />
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="text-center" style={{ padding: '3rem' }}>
+                  <td colSpan={6} className="text-center" style={{ padding: '3rem' }}>
                     <p className="text-muted">No attendance found for this selection.</p>
                   </td>
                 </tr>
@@ -296,9 +313,22 @@ const AttendancePage: React.FC = () => {
                 </div>
                 <div className="mobile-card-row">
                   <span className="mobile-card-label">Status</span>
-                  <span className={`status-badge ${entry.status === 'completed' ? 'active' : 'pending'}`} style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem' }}>
-                    {entry.status}
-                  </span>
+                  <div className="mobile-card-value" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                    <span className={`status-badge ${entry.status === 'completed' ? 'active' : 'pending'}`} style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem' }}>
+                      {entry.status}
+                    </span>
+                    {(entry.status === 'present' || entry.status === 'late') && !entry.checkOut && (
+                      <button 
+                        className="btn btn-secondary btn-icon" 
+                        style={{ width: '28px', height: '28px' }}
+                        title="Check Out"
+                        onClick={() => handleManualAction(entry.member._id, 'check-out')}
+                        disabled={isSaving}
+                      >
+                        <LogOut size={12} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Users, Search, Plus, Filter, MoreVertical, Edit2, Trash2, Shield, Calendar, CreditCard, ChevronRight, Zap, RefreshCw, AlertCircle, Snowflake, PlayCircle } from 'lucide-react';
+import { Users, Search, Plus, Filter, MoreVertical, Edit2, Trash2, Shield, Calendar, CreditCard, ChevronRight, Zap, RefreshCw, AlertCircle, Snowflake, PlayCircle, UserX, UserCheck, UserSquare2 } from 'lucide-react';
 import { getMembers, createMember, deleteMember, assignPlan, renewPlan, cancelPlan, freezePlan, resumePlan, approveMember, updateMember } from '../features/members/members.api';
 import { getPlans } from '../features/plans/plans.api';
+import { getTrainers } from '../features/trainers/trainers.api';
 import { recordPayment } from '../features/payments/payments.api';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuthStore } from '../store/auth.store';
@@ -14,9 +15,11 @@ const MembersPage: React.FC = () => {
 
   const [members, setMembers] = useState<any[]>([]);
   const [plans, setPlans] = useState<any[]>([]);
+  const [trainers, setTrainers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubModalOpen, setIsSubModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -27,7 +30,14 @@ const MembersPage: React.FC = () => {
     phone: '', 
     password: 'Password123',
     planId: '',
+    trainerId: '',
     branchCode: 'MAIN'
+  });
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    trainerId: ''
   });
   const [subFormData, setSubFormData] = useState({
     planId: '',
@@ -61,13 +71,21 @@ const MembersPage: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    fetchMembers(debouncedSearch, filterStatus);
-  }, [debouncedSearch, filterStatus]);
+  const fetchTrainers = async () => {
+    try {
+      const res = await getTrainers();
+      const trainerData = res.data?.data;
+      setTrainers(Array.isArray(trainerData) ? trainerData : (trainerData?.items || []));
+    } catch (error) {
+      console.error('Failed to fetch trainers', error);
+    }
+  };
 
   useEffect(() => {
+    fetchMembers(debouncedSearch, filterStatus);
     fetchPlans();
-  }, []);
+    fetchTrainers();
+  }, [debouncedSearch, filterStatus]);
 
   const handleCreateMember = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +96,28 @@ const MembersPage: React.FC = () => {
       fetchMembers();
     } catch (error: any) {
       alert(error.response?.data?.message || 'Failed to create member');
+    }
+  };
+
+  const handleEditClick = (member: any) => {
+    setSelectedMember(member);
+    setEditFormData({
+      name: member.user?.name || '',
+      email: member.user?.email || '',
+      phone: member.user?.phone || '',
+      trainerId: member.trainer?._id || ''
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await updateMember(selectedMember._id, editFormData);
+      setIsEditModalOpen(false);
+      fetchMembers();
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Update failed');
     }
   };
 
@@ -137,6 +177,30 @@ const MembersPage: React.FC = () => {
       fetchMembers();
     } catch (error: any) {
       alert(error.response?.data?.message || 'Approval failed');
+    }
+  };
+
+  const handleToggleStatus = async (id: string, currentStatus: string) => {
+    const isDeactivating = currentStatus !== 'inactive';
+    const newStatus = isDeactivating ? 'inactive' : 'active';
+    
+    let reason = '';
+    if (isDeactivating) {
+      const input = window.prompt(
+        'Are you sure you want to deactivate this member? They will lose all access immediately.\n\nPlease enter a reason for deactivation:',
+        'Administrative deactivation'
+      );
+      if (input === null) return; // Cancelled
+      reason = input.trim() || 'Administrative deactivation';
+    } else {
+      if (!window.confirm('Reactivate this member?')) return;
+    }
+
+    try {
+      await updateMember(id, { status: newStatus, reason });
+      fetchMembers();
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Status update failed');
     }
   };
 
@@ -252,9 +316,80 @@ const MembersPage: React.FC = () => {
                 {plans.map(p => <option key={p._id} value={p._id}>{p.name} - ₹{p.price}</option>)}
               </select>
             </div>
+            <div className="form-group">
+              <label className="form-label">Assign Trainer (Optional)</label>
+              <select 
+                className="form-input"
+                value={formData.trainerId} 
+                onChange={e => setFormData({ ...formData, trainerId: e.target.value })}
+              >
+                <option value="">No Trainer</option>
+                {trainers.map(t => (
+                  <option key={t._id} value={t._id}>{t.user?.name || t.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
           <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid var(--clr-glass-border)', position: 'sticky', bottom: 0, background: 'var(--clr-bg-sidebar)', zIndex: 10 }}>
             <button className="btn btn-primary w-full" type="submit">Create Member</button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Member Profile">
+        <form onSubmit={handleUpdateMember} className="form-container">
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Full Name</label>
+              <input 
+                type="text" 
+                className="form-input"
+                value={editFormData.name} 
+                onChange={e => setEditFormData({ ...editFormData, name: e.target.value })}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Email</label>
+              <input 
+                type="email" 
+                className="form-input"
+                value={editFormData.email} 
+                onChange={e => setEditFormData({ ...editFormData, email: e.target.value })}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Phone</label>
+              <input 
+                type="text" 
+                className="form-input"
+                value={editFormData.phone} 
+                onChange={e => setEditFormData({ ...editFormData, phone: e.target.value })}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Change Trainer</label>
+              <select 
+                className="form-input"
+                value={editFormData.trainerId} 
+                onChange={e => setEditFormData({ ...editFormData, trainerId: e.target.value })}
+              >
+                <option value="">No Trainer</option>
+                {trainers.map(t => (
+                  <option key={t._id} value={t._id}>{t.user?.name || t.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
+            <button type="submit" className="btn btn-primary w-full" disabled={loading}>
+              Save Changes
+            </button>
+            <button type="button" className="btn btn-secondary w-full" onClick={() => setIsEditModalOpen(false)}>
+              Cancel
+            </button>
           </div>
         </form>
       </Modal>
@@ -348,6 +483,12 @@ const MembersPage: React.FC = () => {
                   <Zap size={14} className="text-primary" />
                   <span style={{ fontSize: '0.9rem', fontWeight: '600' }}>{member.currentPlan?.name || 'No Plan'}</span>
                 </div>
+                {member.trainer && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <UserSquare2 size={14} style={{ color: 'var(--clr-secondary)' }} />
+                    <span style={{ fontSize: '0.85rem' }}>Trainer: {member.trainer.user?.name || member.trainer.name}</span>
+                  </div>
+                )}
                 {member.membershipExpiryDate && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem' }} className="text-muted">
                     <Calendar size={12} />
@@ -369,9 +510,26 @@ const MembersPage: React.FC = () => {
                   </button>
                 )}
                 {(isAdmin || isTrainer) && (
-                  <button className="btn-icon" onClick={() => handleDeleteMember(member._id)} style={{ color: 'var(--clr-danger)' }} title="Delete Member Permanently">
-                    <Trash2 size={14} />
-                  </button>
+                  <>
+                    <button className="btn-icon" onClick={() => handleEditClick(member)} title="Edit Profile">
+                      <Edit2 size={14} />
+                    </button>
+                    <button 
+                      className={`btn-icon ${member.status === 'inactive' ? 'success' : 'warning'}`} 
+                      onClick={() => handleToggleStatus(member._id, member.status)} 
+                      title={member.status === 'inactive' ? 'Reactivate Member' : 'Deactivate Member'}
+                      style={{ 
+                        background: member.status === 'inactive' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                        color: member.status === 'inactive' ? 'var(--clr-success)' : 'var(--clr-warning)',
+                        border: member.status === 'inactive' ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(245, 158, 11, 0.2)'
+                      }}
+                    >
+                      {member.status === 'inactive' ? <UserCheck size={14} /> : <UserX size={14} />}
+                    </button>
+                    <button className="btn-icon" onClick={() => handleDeleteMember(member._id)} style={{ color: 'var(--clr-danger)' }} title="Delete Member Permanently">
+                      <Trash2 size={14} />
+                    </button>
+                  </>
                 )}
               </div>
             </div>

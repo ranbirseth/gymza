@@ -11,6 +11,12 @@ const protect = async (req, _res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
     req.user = await User.findById(decoded.sub).select("-password -refreshTokens");
     if (!req.user) throw new Error("User not found");
+    
+    // Check if user account is deactivated
+    if (req.user.status === "inactive") {
+      return next(Object.assign(new Error("Your account has been deactivated. Please contact admin."), { statusCode: 403 }));
+    }
+
     req.gymId = req.user.gymId;
     
     // If user is a member, check their status/payment
@@ -18,10 +24,10 @@ const protect = async (req, _res, next) => {
       const member = await Member.findOne({ user: req.user._id, gymId: req.gymId });
       if (member) {
         req.member = member;
-        // Block access for inactive or pending members if they try to access non-approval routes
-        // (Wait, the frontend handles redirection, but backend should also protect)
-        if (member.status === "inactive") {
-          return next(Object.assign(new Error("Account discarded by admin"), { statusCode: 403 }));
+        // Block access for inactive, pending, or cancelled members
+        const blockedStatuses = ["inactive", "pending", "cancelled", "expired"];
+        if (blockedStatuses.includes(member.status)) {
+          return next(Object.assign(new Error(`Account ${member.status}. Please contact admin.`), { statusCode: 403 }));
         }
       }
     }
@@ -84,4 +90,20 @@ const checkPlanAccess = (req, _res, next) => {
   next();
 };
 
-module.exports = { protect, authorize, checkPlanAccess };
+const protectOptional = async (req, _res, next) => {
+  const auth = req.headers.authorization || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
+  if (!token) return next();
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+    req.user = await User.findById(decoded.sub).select("-password -refreshTokens");
+    if (req.user) {
+      req.gymId = req.user.gymId;
+    }
+    next();
+  } catch {
+    next();
+  }
+};
+
+module.exports = { protect, protectOptional, authorize, checkPlanAccess };

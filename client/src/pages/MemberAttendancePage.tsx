@@ -132,6 +132,7 @@ const MemberAttendancePage: React.FC = () => {
       const res = await getMyProfile();
       if (res.data?.data) {
         setProfile(res.data.data);
+        console.log("Fetched profile data:", res.data.data); // Add this line
       }
     } catch (error) {
       console.error("Failed to fetch profile", error);

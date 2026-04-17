@@ -12,12 +12,24 @@ const LATE_THRESHOLD_HOUR = 9;
 
 const getTodayDate = () => new Date().toISOString().split("T")[0];
 
+/**
+ * @desc    Mark attendance (check-in or check-out)
+ * @route   POST /api/attendance/mark
+ * @access  Public (Secret Code) OR Private (Admin/Trainer with memberId)
+ */
 const markAttendance = asyncHandler(async (req, res) => {
-  const { secretCode, action } = req.body;
-  if (!secretCode) throw new AppError("Secret code is required", 400);
+  const { secretCode, memberId, action } = req.body;
+  const isAdminOrTrainer = req.user && ["admin", "superadmin", "trainer"].includes(req.user.role);
 
-  const member = await Member.findOne({ secretCode }).populate("user");
-  if (!member) throw new AppError("Invalid secret code", 404);
+  let member;
+  if (isAdminOrTrainer && memberId) {
+    member = await Member.findOne({ _id: memberId, gymId: req.gymId }).populate("user");
+    if (!member) throw new AppError("Member not found", 404);
+  } else {
+    if (!secretCode) throw new AppError("Secret code is required for self check-in", 400);
+    member = await Member.findOne({ secretCode }).populate("user");
+    if (!member) throw new AppError("Invalid secret code", 404);
+  }
 
   const today = getTodayDate();
   const gymId = member.gymId;
@@ -38,7 +50,14 @@ const markAttendance = asyncHandler(async (req, res) => {
       member: member._id,
       date: today,
       checkIn: serverTime,
-      status: isLate ? "late" : "present"
+      status: isLate ? "late" : "present",
+      auditLogs: isAdminOrTrainer ? [{
+        action: "manual_checkin",
+        performedBy: req.user._id,
+        timestamp: new Date(),
+        details: "Manual check-in by admin/trainer",
+        ipAddress: req.ip
+      }] : []
     });
 
     await Attendance.cacheAttendanceStatus(gymId, member._id.toString(), attendance);
@@ -66,6 +85,15 @@ const markAttendance = asyncHandler(async (req, res) => {
 
     attendance.checkOut = new Date();
     attendance.status = "completed";
+    if (isAdminOrTrainer) {
+      attendance.auditLogs.push({
+        action: "manual_checkout",
+        performedBy: req.user._id,
+        timestamp: new Date(),
+        details: "Manual check-out by admin/trainer",
+        ipAddress: req.ip
+      });
+    }
     await attendance.save();
 
     await Attendance.cacheAttendanceStatus(gymId, member._id.toString(), attendance);
@@ -555,6 +583,11 @@ const generatePDFHtml = (userData, member, records, stats, startDate, endDate) =
   `;
 };
 
+/**
+ * @desc    Get attendance history (paginated, searchable)
+ * @route   GET /api/attendance
+ * @access  Private (Admin/Trainer)
+ */
 const history = asyncHandler(async (req, res) => {
   const { skip, limit, page, search, date } = getPagination(req.query);
 

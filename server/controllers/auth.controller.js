@@ -82,6 +82,11 @@ const login = asyncHandler(async (req, res) => {
   if (!user || !(await user.comparePassword(password))) {
     throw new AppError("Invalid credentials", 401, "INVALID_CREDENTIALS");
   }
+
+  // Check if user account is deactivated
+  if (user.status === "inactive") {
+    throw new AppError("Your account has been deactivated. Please contact admin.", 403, "ACCOUNT_INACTIVE");
+  }
   
   let member = null;
   // If user is a member, check approval status
