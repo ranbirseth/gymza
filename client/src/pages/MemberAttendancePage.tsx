@@ -19,6 +19,8 @@ import {
   Flame,
   Award,
   BarChart3,
+  Zap,
+  AlertTriangle,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, subMonths, addMonths, eachDayOfInterval, parseISO, isSameDay } from "date-fns";
 import { io, Socket } from "socket.io-client";
@@ -32,6 +34,7 @@ import {
   getRealTimeStatus,
   exportMyAttendance,
 } from "../features/attendance/attendance.api";
+import { getMyProfile } from "../features/members/members.api";
 import { useAuthStore } from "../store/auth.store";
 import { useDebounce } from "../hooks/useDebounce";
 
@@ -120,8 +123,20 @@ const MemberAttendancePage: React.FC = () => {
   const [exportRange, setExportRange] = useState({ start: "", end: "" });
   const [location, setLocation] = useState<{ latitude: number; longitude: number; accuracy: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [profile, setProfile] = useState<any>(null);
 
   const debouncedSearch = useDebounce(searchQuery, 500);
+
+  const fetchProfile = useCallback(async () => {
+    try {
+      const res = await getMyProfile();
+      if (res.data?.data) {
+        setProfile(res.data.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch profile", error);
+    }
+  }, []);
 
   const fetchTodayStatus = useCallback(async () => {
     try {
@@ -275,7 +290,8 @@ const MemberAttendancePage: React.FC = () => {
     fetchTodayStatus();
     fetchStats();
     fetchHistory();
-  }, [fetchTodayStatus, fetchStats, fetchHistory]);
+    fetchProfile();
+  }, [fetchTodayStatus, fetchStats, fetchHistory, fetchProfile]);
 
   useEffect(() => {
     if (!gymId) return;
@@ -295,6 +311,7 @@ const MemberAttendancePage: React.FC = () => {
       if (data.memberId === user?._id) {
         fetchTodayStatus();
         fetchStats();
+        fetchProfile();
       }
     });
 
@@ -302,14 +319,22 @@ const MemberAttendancePage: React.FC = () => {
       if (data.memberId === user?._id) {
         fetchTodayStatus();
         fetchStats();
+        fetchProfile();
+      }
+    });
+
+    socket.on("member:updated", (data: any) => {
+      if (data.memberId === profile?._id) {
+        fetchProfile();
       }
     });
 
     return () => {
       socket.off("attendance:checkin");
       socket.off("attendance:checkout");
+      socket.off("member:updated");
     };
-  }, [socket, user, fetchTodayStatus, fetchStats]);
+  }, [socket, user, fetchTodayStatus, fetchStats, fetchProfile, profile]);
 
   const totalPages = Math.ceil(totalRecords / limit);
 
@@ -354,12 +379,72 @@ const MemberAttendancePage: React.FC = () => {
               <Download size={18} />
               Export
             </button>
-            <button className="btn btn-icon" onClick={() => { fetchTodayStatus(); fetchStats(); fetchHistory(); }}>
+            <button className="btn btn-icon" onClick={() => { fetchTodayStatus(); fetchStats(); fetchHistory(); fetchProfile(); }}>
               <RefreshCw size={18} />
             </button>
           </div>
         </div>
       </div>
+
+      {profile?.currentPlan && (
+        <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '1.5rem', background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%)', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+            <div style={{ background: 'rgba(139, 92, 246, 0.15)', borderRadius: '12px', padding: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Zap size={24} style={{ color: 'var(--clr-primary)' }} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>My Active Plan</h2>
+              <p className="text-muted" style={{ fontSize: '0.8rem' }}>Current Subscription</p>
+            </div>
+            <div style={{ marginLeft: 'auto' }}>
+              <span className={`status-badge ${profile.isActivePlan ? 'active' : 'pending'}`}>
+                {profile.isActivePlan ? 'Active' : 'Pending Activation'}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem' }}>
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <p className="text-muted" style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.35rem' }}>Plan Name</p>
+              <p style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--clr-primary)' }}>{profile.currentPlan.name}</p>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <p className="text-muted" style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.35rem' }}>Duration</p>
+              <p style={{ fontWeight: 600, fontSize: '0.95rem' }}>{profile.currentPlan.durationType}</p>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <p className="text-muted" style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.35rem' }}>Start Date</p>
+              <p style={{ fontWeight: 600, fontSize: '0.95rem' }}>
+                {profile.membershipStartDate ? new Date(profile.membershipStartDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+              </p>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <p className="text-muted" style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.35rem' }}>Expiry Date</p>
+              <p style={{ fontWeight: 600, fontSize: '0.95rem', color: profile.membershipExpiryDate && new Date(profile.membershipExpiryDate) < new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) ? 'var(--clr-danger)' : 'inherit' }}>
+                {profile.membershipExpiryDate ? new Date(profile.membershipExpiryDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+              </p>
+            </div>
+          </div>
+
+          {profile.currentPlan.features?.length > 0 && (
+            <div style={{ marginTop: '1rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              {profile.currentPlan.features.map((f: string, i: number) => (
+                <span key={i} style={{ fontSize: '0.75rem', background: 'rgba(139, 92, 246, 0.1)', padding: '0.35rem 0.75rem', borderRadius: '20px', border: '1px solid rgba(139, 92, 246, 0.2)', color: 'var(--clr-primary)' }}>
+                  {f}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!profile?.currentPlan && (
+        <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '1.5rem', textAlign: 'center', background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+          <AlertTriangle size={32} style={{ color: 'var(--clr-warning)', marginBottom: '0.5rem' }} />
+          <p className="text-muted" style={{ marginBottom: '0.35rem' }}>No active plan assigned</p>
+          <p style={{ fontSize: '0.85rem', color: 'var(--clr-text-muted)' }}>Please contact the admin to subscribe to a plan.</p>
+        </div>
+      )}
 
       <div className="attendance-checkin-section">
         <div className="checkin-card glass-panel">
