@@ -6,9 +6,11 @@ import { getMembers, getMyProfile } from '../features/members/members.api';
 import { getPayments } from '../features/payments/payments.api';
 import { markAttendance, getMyAttendance, getTodayAttendanceStatus, getMyAttendanceStats, exportMyAttendance } from '../features/attendance/attendance.api';
 import { useAuthStore } from '../store/auth.store';
+import { useSocket } from '../hooks/useSocket';
 import Modal from '../components/Modal';
 
 const MemberView: React.FC = () => {
+  const { user } = useAuthStore();
   const [workout, setWorkout] = useState<any>(null);
   const [diet, setDiet] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -26,7 +28,8 @@ const MemberView: React.FC = () => {
   const [activeSection, setActiveSection] = useState<'overview' | 'attendance'>('overview');
 
   const fetchData = async () => {
-    setLoading(true);
+    // We only set loading true on initial fetch or filter change, not on socket update
+    // to avoid UI flickering
     try {
       const [wRes, dRes, pRes, payRes, attRes, todayRes, statsRes] = await Promise.all([
         getMyWorkout(),
@@ -53,8 +56,23 @@ const MemberView: React.FC = () => {
   };
 
   useEffect(() => {
+    setLoading(true);
     fetchData();
   }, [attendanceStatusFilter]);
+
+  // Real-time synchronization
+  useSocket((event, payload) => {
+    if (event === "member:updated") {
+      if (payload.userId === user?._id || payload.memberId === profile?._id) {
+        fetchData();
+      }
+    }
+    if (event === "attendance:checkin" || event === "attendance:checkout") {
+      if (payload.memberId === profile?._id) {
+        fetchData();
+      }
+    }
+  });
 
   const handleMarkAttendance = async (action: 'check-in' | 'check-out') => {
     if (!profile?.secretCode) {
@@ -200,64 +218,132 @@ const MemberView: React.FC = () => {
             </div>
           )}
 
-          <div className="glass-panel" style={{ padding: '1.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+          <div className="grid-cards" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+            {/* Active Plan Section */}
+            <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div className="stat-icon" style={{ background: 'rgba(6, 182, 212, 0.1)', color: 'var(--clr-secondary)', width: '40px', height: '40px' }}>
-                  <CalendarCheck size={20} />
+                <div className="stat-icon" style={{ background: 'rgba(139, 92, 246, 0.1)', color: 'var(--clr-primary)', width: '40px', height: '40px' }}>
+                  <Zap size={20} />
                 </div>
                 <div>
-                  <h2 style={{ fontSize: '1.1rem' }}>Daily Attendance</h2>
-                  <p className="text-muted" style={{ fontSize: '0.75rem' }}>ID: {profile?.secretCode}</p>
+                  <h2 style={{ fontSize: '1.1rem' }}>My Active Plan</h2>
+                  <p className="text-muted" style={{ fontSize: '0.75rem' }}>Current Subscription</p>
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Clock size={14} className="text-muted" />
-                <span className="text-muted" style={{ fontSize: '0.8rem' }}>
-                  {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-                </span>
-              </div>
-            </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {!todayAttendance ? (
-                <button
-                  className="btn btn-primary w-full"
-                  style={{ padding: '1rem', gap: '0.75rem', fontSize: '1rem' }}
-                  onClick={() => handleMarkAttendance('check-in')}
-                  disabled={markingAttendance}
-                >
-                  <CheckCircle2 size={22} />
-                  {markingAttendance ? 'Processing...' : 'Check In'}
-                </button>
-              ) : todayAttendance.status === 'present' ? (
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <div className="glass-panel" style={{ flex: 1, background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '0.75rem', textAlign: 'center' }}>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)', marginBottom: '0.25rem' }}>Check In</p>
-                    <p style={{ fontSize: '0.9rem', color: 'var(--clr-success)', fontWeight: 600 }}>
-                      {new Date(todayAttendance.checkIn).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-                    </p>
+              {profile?.currentPlan ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--clr-primary)' }}>{profile.currentPlan.name}</h3>
+                    <span className={`status-badge ${profile.isActivePlan ? 'active' : 'pending'}`}>
+                      {profile.isActivePlan ? 'Active' : 'Pending Activation'}
+                    </span>
                   </div>
-                  <button
-                    className="btn btn-danger"
-                    style={{ flex: 1, padding: '0.75rem', gap: '0.5rem' }}
-                    onClick={() => handleMarkAttendance('check-out')}
-                    disabled={markingAttendance}
-                  >
-                    <LogOut size={18} />
-                    {markingAttendance ? 'Processing...' : 'Check Out'}
-                  </button>
+                  
+                  <div className="glass-panel" style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <div>
+                        <p className="text-muted" style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Duration</p>
+                        <p style={{ fontWeight: 600, fontSize: '0.9rem' }}>{profile.currentPlan.durationType}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted" style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Price</p>
+                        <p style={{ fontWeight: 600, fontSize: '0.9rem' }}>₹{profile.currentPlan.price}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted" style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Start Date</p>
+                        <p style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                          {profile.membershipStartDate ? new Date(profile.membershipStartDate).toLocaleDateString('en-IN') : 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-muted" style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Expiry Date</p>
+                        <p style={{ fontWeight: 600, fontSize: '0.9rem', color: daysRemaining !== null && daysRemaining <= 5 ? 'var(--clr-danger)' : 'inherit' }}>
+                          {profile.membershipExpiryDate ? new Date(profile.membershipExpiryDate).toLocaleDateString('en-IN') : 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {profile.currentPlan.features?.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      {profile.currentPlan.features.map((f: string, i: number) => (
+                        <span key={i} style={{ fontSize: '0.75rem', background: 'rgba(255,255,255,0.05)', padding: '0.25rem 0.6rem', borderRadius: '20px', border: '1px solid var(--clr-glass-border)' }}>
+                          {f}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : (
-                <div className="glass-panel" style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid var(--clr-success)', padding: '1.25rem', textAlign: 'center' }}>
-                  <CheckCircle2 size={28} style={{ color: 'var(--clr-success)', marginBottom: '0.5rem' }} />
-                  <h4 style={{ color: 'var(--clr-success)', marginBottom: '0.5rem' }}>Today's Session Complete</h4>
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', fontSize: '0.85rem' }}>
-                    <span className="text-muted">In: <strong style={{ color: 'var(--clr-text-main)' }}>{new Date(todayAttendance.checkIn).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</strong></span>
-                    <span className="text-muted">Out: <strong style={{ color: 'var(--clr-text-main)' }}>{todayAttendance.checkOut ? new Date(todayAttendance.checkOut).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '-'}</strong></span>
-                  </div>
+                <div style={{ textAlign: 'center', padding: '1rem' }}>
+                  <AlertTriangle size={32} style={{ color: 'var(--clr-warning)', opacity: 0.5, marginBottom: '0.5rem' }} />
+                  <p className="text-muted">No active plan assigned.</p>
+                  <p style={{ fontSize: '0.75rem', marginTop: '0.5rem' }}>Please contact admin to subscribe.</p>
                 </div>
               )}
+            </div>
+
+            {/* Daily Attendance Section */}
+            <div className="glass-panel" style={{ padding: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div className="stat-icon" style={{ background: 'rgba(6, 182, 212, 0.1)', color: 'var(--clr-secondary)', width: '40px', height: '40px' }}>
+                    <CalendarCheck size={20} />
+                  </div>
+                  <div>
+                    <h2 style={{ fontSize: '1.1rem' }}>Daily Attendance</h2>
+                    <p className="text-muted" style={{ fontSize: '0.75rem' }}>ID: {profile?.secretCode}</p>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Clock size={14} className="text-muted" />
+                  <span className="text-muted" style={{ fontSize: '0.8rem' }}>
+                    {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {!todayAttendance ? (
+                  <button
+                    className="btn btn-primary w-full"
+                    style={{ padding: '1rem', gap: '0.75rem', fontSize: '1rem' }}
+                    onClick={() => handleMarkAttendance('check-in')}
+                    disabled={markingAttendance}
+                  >
+                    <CheckCircle2 size={22} />
+                    {markingAttendance ? 'Processing...' : 'Check In'}
+                  </button>
+                ) : todayAttendance.status === 'present' ? (
+                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <div className="glass-panel" style={{ flex: 1, background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '0.75rem', textAlign: 'center' }}>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)', marginBottom: '0.25rem' }}>Check In</p>
+                      <p style={{ fontSize: '0.9rem', color: 'var(--clr-success)', fontWeight: 600 }}>
+                        {new Date(todayAttendance.checkIn).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    <button
+                      className="btn btn-danger"
+                      style={{ flex: 1, padding: '0.75rem', gap: '0.5rem' }}
+                      onClick={() => handleMarkAttendance('check-out')}
+                      disabled={markingAttendance}
+                    >
+                      <LogOut size={18} />
+                      {markingAttendance ? 'Processing...' : 'Check Out'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="glass-panel" style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid var(--clr-success)', padding: '1.25rem', textAlign: 'center' }}>
+                    <CheckCircle2 size={28} style={{ color: 'var(--clr-success)', marginBottom: '0.5rem' }} />
+                    <h4 style={{ color: 'var(--clr-success)', marginBottom: '0.5rem' }}>Today's Session Complete</h4>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', fontSize: '0.85rem' }}>
+                      <span className="text-muted">In: <strong style={{ color: 'var(--clr-text-main)' }}>{new Date(todayAttendance.checkIn).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</strong></span>
+                      <span className="text-muted">Out: <strong style={{ color: 'var(--clr-text-main)' }}>{todayAttendance.checkOut ? new Date(todayAttendance.checkOut).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '-'}</strong></span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

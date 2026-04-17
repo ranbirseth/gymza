@@ -198,6 +198,15 @@ const assignPlan = asyncHandler(async (req, res) => {
     member.status = "active";
   }
   await member.save();
+
+  if (req.app.locals.io) {
+    req.app.locals.io.to(req.gymId).emit("member:updated", {
+      memberId: member._id,
+      userId: member.user,
+      action: "plan_assigned"
+    });
+  }
+
   sendResponse(res, { message: "Plan assigned to member. Awaiting payment.", data: member });
 });
 
