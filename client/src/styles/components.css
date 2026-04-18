@@ -277,6 +277,17 @@ select.form-input option {
     font-size: 1.5rem;
 }
 
+/* Check-in Card with Background */
+.stat-card.checkin-bg-card {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.45) 100%), url('https://res.cloudinary.com/dyc33dchn/image/upload/q_auto/f_auto/v1776523432/ChatGPT_Image_Apr_18_2026_08_12_31_PM_xpfcf7.png') center / cover no-repeat fixed !important;
+}
+
+@media (max-width: 767px) {
+    .stat-card.checkin-bg-card {
+        background-attachment: scroll !important;
+    }
+}
+
 /* Grids */
 .grid-stats {
     display: grid;

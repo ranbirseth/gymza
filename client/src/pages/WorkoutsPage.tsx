@@ -420,7 +420,7 @@ const MemberView: React.FC = () => {
           )}
 
           <div className="grid-cards" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))', gap: '1.5rem' }}>
-            <div className="glass-panel" style={{ padding: 'var(--sp-lg)', height: 'fit-content', minHeight: '300px', background: `linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%), url('https://images.unsplash.com/photo-1534367789018-d5486a27ee86?w=500&h=300&fit=crop')`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundBlendMode: 'overlay' }}>
+            <div className="glass-panel" style={{ padding: 'var(--sp-lg)', height: 'fit-content', minHeight: '300px', background: `linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%), url('https://res.cloudinary.com/dyc33dchn/image/upload/q_auto/f_auto/v1776538385/7d99dccaaae76516dc722f79811cde9b_sr3iqo.jpg')`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundBlendMode: 'overlay' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div className="stat-icon" style={{ background: 'rgba(139, 92, 246, 0.1)', color: 'var(--clr-primary)', width: '40px', height: '40px', flexShrink: 0 }}>
                   <Dumbbell size={20} />
@@ -452,34 +452,38 @@ const MemberView: React.FC = () => {
               )}
             </div>
 
-            <div className="glass-panel" style={{ padding: 'var(--sp-lg)', height: 'fit-content', minHeight: '300px', background: `linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(34, 197, 94, 0.1) 100%), url('https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=500&h=300&fit=crop')`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundBlendMode: 'overlay' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--clr-success)', width: '40px', height: '40px', flexShrink: 0 }}>
-                  <Utensils size={20} />
-                </div>
-                <h2 style={{ fontSize: '1.25rem' }}>My Diet Plan</h2>
-              </div>
-              {!diet ? <p className="text-muted">No diet assigned yet.</p> : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <h3 style={{ color: 'var(--clr-text-main)' }}>{diet.name}</h3>
-                    <span className="status-badge active" style={{ fontSize: '0.8rem' }}>{diet.calories} kcal</span>
+            <div className="glass-panel" style={{ position: 'relative', padding: 'var(--sp-lg)', height: 'fit-content', minHeight: '300px', background: `url('https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=500&h=300&fit=crop')`, backgroundSize: 'cover', backgroundPosition: 'center', color: '#fff', overflow: 'hidden' }}>
+              {/* Darker overlay for better readability */}
+              <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', zIndex: 0, borderRadius: 'inherit' }} />
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#fff', width: '40px', height: '40px', flexShrink: 0 }}>
+                    <Utensils size={20} />
                   </div>
-                  {(['breakfast', 'lunch', 'dinner', 'snacks'] as const).map((meal) => (
-                    <div key={meal} className="glass-panel" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)' }}>
-                      <h4 style={{ textTransform: 'capitalize', marginBottom: '1rem', color: 'var(--clr-success)', borderBottom: '1px solid var(--clr-glass-border)', paddingBottom: '0.5rem' }}>{meal}</h4>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        {mealItems(meal).map((item: any, i: number) => (
-                          <div key={i} style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--clr-glass-border)', display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
-                            <p style={{ fontSize: '0.9rem', wordBreak: 'break-word' }}>{item.foodName}</p>
-                            <p className="text-muted" style={{ fontSize: '0.85rem', textAlign: 'right', flexShrink: 0 }}>{item.quantity}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                  <h2 style={{ fontSize: '1.25rem', color: '#fff', fontWeight: 800 }}>My Diet Plan</h2>
                 </div>
-              )}
+                {!diet ? <p className="text-muted" style={{ color: '#e5e7eb' }}>No diet assigned yet.</p> : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', background: 'rgba(0,0,0,0.3)', padding: '0.75rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <h3 style={{ color: '#fff', margin: 0 }}>{diet.name}</h3>
+                      <span className="status-badge active" style={{ fontSize: '0.8rem', background: 'var(--clr-success)', color: '#fff', fontWeight: 700 }}>{diet.calories} kcal</span>
+                    </div>
+                    {(['breakfast', 'lunch', 'dinner', 'snacks'] as const).map((meal) => (
+                      <div key={meal} className="glass-panel" style={{ padding: '1.25rem', background: '#ffffff', color: '#111827', border: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}>
+                        <h4 style={{ textTransform: 'capitalize', marginBottom: '1rem', color: '#059669', borderBottom: '2px solid #ecfdf5', paddingBottom: '0.5rem', fontWeight: 800, fontSize: '1.1rem' }}>{meal}</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          {mealItems(meal).map((item: any, i: number) => (
+                            <div key={i} style={{ padding: '0.5rem 0', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
+                              <p style={{ fontSize: '0.95rem', wordBreak: 'break-word', color: '#374151', fontWeight: 600 }}>{item.foodName}</p>
+                              <p style={{ fontSize: '0.9rem', textAlign: 'right', flexShrink: 0, color: '#6b7280', fontWeight: 500 }}>{item.quantity}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

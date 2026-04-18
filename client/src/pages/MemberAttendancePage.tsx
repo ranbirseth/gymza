@@ -944,6 +944,30 @@ const MemberAttendancePage: React.FC = () => {
 
         .checkin-card {
           padding: 1.5rem;
+          background-image: url('https://res.cloudinary.com/dyc33dchn/image/upload/q_auto/f_auto/v1776523432/ChatGPT_Image_Apr_18_2026_08_12_31_PM_xpfcf7.png');
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+          background-attachment: fixed;
+          position: relative;
+        }
+
+        .checkin-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          border-radius: inherit;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .checkin-card > * {
+          position: relative;
+          z-index: 2;
         }
 
         .checkin-header {
@@ -963,8 +987,11 @@ const MemberAttendancePage: React.FC = () => {
           justify-content: space-around;
           gap: 1rem;
           margin-bottom: 1.5rem;
-          padding: 1rem;
-          background: var(--clr-bg-base);
+          padding: 1.25rem;
+          background: rgba(255, 255, 255, 0.03);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border: 1px solid rgba(255, 255, 255, 0.08);
           border-radius: var(--border-radius-md);
         }
 
@@ -1355,6 +1382,10 @@ const MemberAttendancePage: React.FC = () => {
 
           .pagination {
             flex-wrap: wrap;
+          }
+
+          .checkin-card {
+            background-attachment: scroll;
           }
         }
 

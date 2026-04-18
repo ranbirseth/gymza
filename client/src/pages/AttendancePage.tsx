@@ -165,13 +165,20 @@ const AttendancePage: React.FC = () => {
       </Modal>
 
       <div className="grid-stats">
-        <div className="stat-card">
+        <div 
+          className="stat-card checkin-bg-card"
+          style={{
+            backgroundImage: `url('https://res.cloudinary.com/dyc33dchn/image/upload/q_auto/f_auto/v1776523432/ChatGPT_Image_Apr_18_2026_08_12_31_PM_xpfcf7.png')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          }}
+        >
           <div className="stat-info">
-            <h3>Total Check-ins</h3>
-            <p className="stat-value">{stats.total}</p>
-            <p className="stat-trend trend-up">{stats.present} Currently Present</p>
+            <h3 style={{ color: 'white' }}>Total Check-ins</h3>
+            <p className="stat-value" style={{ color: 'white' }}>{stats.total}</p>
+            <p className="stat-trend trend-up" style={{ color: '#4ade80' }}>{stats.present} Currently Present</p>
           </div>
-          <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--clr-success)' }}>
+          <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.3)', color: 'var(--clr-success)' }}>
             <CheckCircle2 size={24} />
           </div>
         </div>
