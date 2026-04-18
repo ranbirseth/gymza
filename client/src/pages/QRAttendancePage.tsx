@@ -63,9 +63,28 @@ const QRAttendancePage: React.FC = () => {
         position: 'relative',
         zIndex: 1
       }}>
-        <div className="sidebar-logo" style={{ justifyContent: 'center', marginBottom: '2rem' }}>
-          <Dumbbell className="text-primary" size={32} />
-          <span className="text-gradient" style={{ fontSize: '2rem', fontWeight: 800 }}>Gymza</span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: '2rem', gap: '1rem' }}>
+          <img 
+            src="https://res.cloudinary.com/dyc33dchn/image/upload/q_auto/f_auto/v1776476678/WhatsApp_Image_2026-04-15_at_10.11.03_PM_2_jvuq84.jpg" 
+            alt="RUDRA FITNESS" 
+            style={{ 
+              width: '80px',
+              height: '80px',
+              borderRadius: '16px',
+              objectFit: 'cover'
+            }}
+          />
+          <span className="text-gradient" style={{ 
+            fontSize: '1.8rem', 
+            fontWeight: 700,
+            fontFamily: '"Bebas Neue", sans-serif',
+            letterSpacing: '0.12em',
+            background: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            filter: 'drop-shadow(0 2px 4px rgba(139, 92, 246, 0.15))'
+          }}>RUDRA FITNESS</span>
         </div>
 
         <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', fontWeight: 700 }}>Mark Attendance</h2>

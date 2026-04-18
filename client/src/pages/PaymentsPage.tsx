@@ -277,10 +277,33 @@ const PaymentsPage: React.FC = () => {
       <Modal isOpen={isInvoiceModalOpen} onClose={() => setIsInvoiceModalOpen(false)} title="Payment Invoice">
         {selectedInvoice && (
           <div className="invoice-printable" style={{ padding: '1rem', color: '#1a1a1a', background: 'white', borderRadius: '8px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', borderBottom: '2px solid #eee', paddingBottom: '1rem' }}>
-              <div>
-                <h2 style={{ color: 'var(--clr-primary)', marginBottom: '0.5rem' }}>GYMZA</h2>
-                <p style={{ fontSize: '0.85rem', color: '#666' }}>Premium Fitness Center</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', borderBottom: '2px solid #eee', paddingBottom: '1rem', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <img 
+                  src="https://res.cloudinary.com/dyc33dchn/image/upload/q_auto/f_auto/v1776476678/WhatsApp_Image_2026-04-15_at_10.11.03_PM_2_jvuq84.jpg" 
+                  alt="RUDRA FITNESS" 
+                  style={{ 
+                    width: '50px',
+                    height: '50px',
+                    borderRadius: '12px',
+                    objectFit: 'cover'
+                  }}
+                />
+                <div>
+                  <h2 style={{ 
+                    background: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                    marginBottom: '0.25rem', 
+                    fontSize: '1.4rem',
+                    fontFamily: '"Bebas Neue", sans-serif',
+                    fontWeight: '700',
+                    letterSpacing: '0.1em',
+                    margin: 0
+                  }}>RUDRA FITNESS</h2>
+                  <p style={{ fontSize: '0.85rem', color: '#666', margin: 0 }}>Premium Fitness Center</p>
+                </div>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <h3 style={{ marginBottom: '0.25rem' }}>INVOICE</h3>

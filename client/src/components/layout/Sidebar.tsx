@@ -53,8 +53,26 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
       <div className="sidebar-header">
         <div className="sidebar-logo">
-          <Dumbbell className="text-primary" />
-          <span className="text-gradient">Gymza</span>
+          <img 
+            src="https://res.cloudinary.com/dyc33dchn/image/upload/q_auto/f_auto/v1776476678/WhatsApp_Image_2026-04-15_at_10.11.03_PM_2_jvuq84.jpg" 
+            alt="RUDRA FITNESS" 
+            style={{ 
+              width: '40px',
+              height: '40px',
+              borderRadius: '8px',
+              objectFit: 'cover'
+            }}
+          />
+          <span className="text-gradient" style={{ 
+            letterSpacing: '0.08em', 
+            fontSize: '1.1rem',
+            fontFamily: '"Bebas Neue", sans-serif',
+            fontWeight: '700',
+            background: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>RUDRA</span>
         </div>
         <button className="sidebar-close-btn" onClick={onClose}>
           <X size={24} />
