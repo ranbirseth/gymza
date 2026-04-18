@@ -230,26 +230,39 @@ const TrainersPage: React.FC = () => {
       ) : (
         <div className="grid-cards">
           {filteredTrainers.map((trainer) => (
-            <div key={trainer._id} className="glass-card trainer-card" style={{ padding: '2rem', position: 'relative' }}>
-              <div style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', display: 'flex', gap: '0.5rem' }}>
-                <button className="btn-icon" onClick={() => handleOpenEdit(trainer)} title="Edit">
-                  <Edit2 size={14} />
-                </button>
-                <button className="btn-icon danger" onClick={() => handleDelete(trainer._id)} title="Delete">
-                  <Trash2 size={14} />
-                </button>
-              </div>
-              
-              <div className="avatar" style={{ 
-                width: '100px', 
-                height: '100px', 
-                margin: '0 auto 1.5rem', 
-                fontSize: '2rem',
-                boxShadow: '0 0 20px var(--clr-primary-glow)',
-                border: '3px solid var(--clr-glass-border)'
-              }}>
-                {trainer.user?.name?.charAt(0) || trainer.name?.charAt(0)}
-              </div>
+            <div key={trainer._id} className="glass-card trainer-card" style={{ padding: 0, position: 'relative', overflow: 'hidden' }}>
+              {/* Trainer Banner Image */}
+              <div style={{ 
+                position: 'relative', 
+                height: '120px', 
+                background: `linear-gradient(135deg, rgba(6, 182, 212, 0.6) 0%, rgba(139, 92, 246, 0.6) 100%), url('https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=500&h=300&fit=crop')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
+              }} />
+
+              <div style={{ padding: '2rem 2rem 1.5rem', position: 'relative' }}>
+                <div style={{ position: 'absolute', top: '1rem', right: '1.25rem', display: 'flex', gap: '0.5rem', zIndex: 10 }}>
+                  <button className="btn-icon" onClick={() => handleOpenEdit(trainer)} title="Edit">
+                    <Edit2 size={14} />
+                  </button>
+                  <button className="btn-icon danger" onClick={() => handleDelete(trainer._id)} title="Delete">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+                
+                <div className="avatar" style={{ 
+                  width: '100px', 
+                  height: '100px', 
+                  margin: '-60px auto 1.5rem', 
+                  fontSize: '2rem',
+                  boxShadow: '0 0 20px var(--clr-primary-glow)',
+                  border: '3px solid var(--clr-glass-border)',
+                  background: 'linear-gradient(135deg, var(--clr-primary), var(--clr-secondary))',
+                  position: 'relative',
+                  zIndex: 5
+                }}>
+                  {trainer.user?.name?.charAt(0) || trainer.name?.charAt(0)}
+                </div>
               
               <div className="text-center">
                 <h3 style={{ fontSize: '1.35rem', marginBottom: '0.25rem' }}>{trainer.user?.name || trainer.name}</h3>
@@ -312,6 +325,7 @@ const TrainersPage: React.FC = () => {
                   <Users size={16} />
                   View Members
                 </button>
+              </div>
               </div>
             </div>
           ))}

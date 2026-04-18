@@ -92,19 +92,37 @@ const PaymentsPage: React.FC = () => {
 
       {/* Active Plan Section */}
       {profile?.currentPlan ? (
-        <div className="glass-panel" style={{ padding: '1.5rem', background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%)', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-            <div style={{ background: 'rgba(139, 92, 246, 0.15)', borderRadius: '12px', padding: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <CreditCard size={24} style={{ color: 'var(--clr-primary)' }} />
-            </div>
-            <div>
-              <h2 style={{ fontSize: '1.1rem', margin: 0 }}>My Active Plan</h2>
-              <p className="text-muted" style={{ fontSize: '0.8rem', margin: '0.25rem 0 0 0' }}>Current Subscription</p>
-            </div>
-            <div style={{ marginLeft: 'auto' }}>
-              <span className="status-badge active">Active</span>
+        <div className="glass-panel" style={{ padding: 0, background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%)', border: '1px solid rgba(139, 92, 246, 0.2)', overflow: 'hidden' }}>
+          {/* Premium Banner Image */}
+          <div style={{ 
+            position: 'relative', 
+            height: '180px', 
+            background: `linear-gradient(135deg, rgba(139, 92, 246, 0.6) 0%, rgba(6, 182, 212, 0.6) 100%), url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&h=300&fit=crop')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            borderBottom: '2px solid rgba(139, 92, 246, 0.2)'
+          }}>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', padding: '1.5rem', background: 'linear-gradient(to top, rgba(0,0,0,0.3), transparent)' }}>
+              <div>
+                <h2 style={{ fontSize: '1.8rem', fontWeight: 700, color: 'white', margin: 0, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>Premium Membership</h2>
+                <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.85rem', margin: '0.25rem 0 0 0' }}>Your exclusive fitness journey</p>
+              </div>
             </div>
           </div>
+
+          <div style={{ padding: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div style={{ background: 'rgba(139, 92, 246, 0.15)', borderRadius: '12px', padding: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <CreditCard size={24} style={{ color: 'var(--clr-primary)' }} />
+              </div>
+              <div>
+                <h2 style={{ fontSize: '1rem', margin: 0 }}>Plan Details</h2>
+                <p className="text-muted" style={{ fontSize: '0.8rem', margin: '0.25rem 0 0 0' }}>Your current subscription</p>
+              </div>
+              <div style={{ marginLeft: 'auto' }}>
+                <span className="status-badge active">Active</span>
+              </div>
+            </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
             <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
@@ -150,6 +168,7 @@ const PaymentsPage: React.FC = () => {
               </div>
             </div>
           )}
+            </div>
         </div>
       ) : (
         <div className="glass-panel" style={{ padding: '1.5rem', textAlign: 'center', background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.2)' }}>

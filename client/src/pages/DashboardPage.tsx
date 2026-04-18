@@ -46,53 +46,93 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid-stats" style={{ marginBottom: '2rem' }}>
-        <div className="stat-card">
-          <div className="stat-info">
-            <h3>Total Members</h3>
-            <p className="stat-value">{stats.totalMembers}</p>
-            <p className="stat-trend trend-up">
-              <TrendingUp size={14} />
-              {stats.activePlans} Active Plans
-            </p>
-          </div>
-          <div className="stat-icon" style={{ background: 'rgba(139, 92, 246, 0.1)', color: 'var(--clr-primary)' }}>
-            <Users size={24} />
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-info">
-            <h3>Monthly Revenue</h3>
-            <p className="stat-value">₹{(stats.revenue || 0).toLocaleString()}</p>
-            <p className="stat-trend trend-up">
-              <TrendingUp size={14} />
-              Overall Total
-            </p>
-          </div>
-          <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--clr-success)' }}>
-            <IndianRupee size={24} />
+        <div className="stat-card" style={{ position: 'relative', overflow: 'hidden' }}>
+          <div style={{ 
+            position: 'absolute', 
+            inset: 0, 
+            background: `linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%), url('https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&h=400&fit=crop')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: 0.3
+          }} />
+          <div style={{ position: 'relative', zIndex: 2 }}>
+            <div className="stat-info">
+              <h3>Total Members</h3>
+              <p className="stat-value">{stats.totalMembers}</p>
+              <p className="stat-trend trend-up">
+                <TrendingUp size={14} />
+                {stats.activePlans} Active Plans
+              </p>
+            </div>
+            <div className="stat-icon" style={{ background: 'rgba(139, 92, 246, 0.1)', color: 'var(--clr-primary)' }}>
+              <Users size={24} />
+            </div>
           </div>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-info">
-            <h3>Active Trainers</h3>
-            <p className="stat-value">{stats.activeTrainers}</p>
-            <p className="text-muted" style={{ fontSize: '0.8rem' }}>On system</p>
-          </div>
-          <div className="stat-icon" style={{ background: 'rgba(6, 182, 212, 0.1)', color: 'var(--clr-secondary)' }}>
-            <UserSquare2 size={24} />
+        <div className="stat-card" style={{ position: 'relative', overflow: 'hidden' }}>
+          <div style={{ 
+            position: 'absolute', 
+            inset: 0, 
+            background: `linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(34, 197, 94, 0.08) 100%), url('https://images.unsplash.com/photo-1533827432537-70133479f06e?w=600&h=400&fit=crop')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: 0.3
+          }} />
+          <div style={{ position: 'relative', zIndex: 2 }}>
+            <div className="stat-info">
+              <h3>Monthly Revenue</h3>
+              <p className="stat-value">₹{(stats.revenue || 0).toLocaleString()}</p>
+              <p className="stat-trend trend-up">
+                <TrendingUp size={14} />
+                Overall Total
+              </p>
+            </div>
+            <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--clr-success)' }}>
+              <IndianRupee size={24} />
+            </div>
           </div>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-info">
-            <h3>Attendance Today</h3>
-            <p className="stat-value">{stats.attendanceToday}</p>
-            <p className="text-muted" style={{ fontSize: '0.8rem' }}>Check-ins today</p>
+        <div className="stat-card" style={{ position: 'relative', overflow: 'hidden' }}>
+          <div style={{ 
+            position: 'absolute', 
+            inset: 0, 
+            background: `linear-gradient(135deg, rgba(6, 182, 212, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%), url('https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=600&h=400&fit=crop')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: 0.3
+          }} />
+          <div style={{ position: 'relative', zIndex: 2 }}>
+            <div className="stat-info">
+              <h3>Active Trainers</h3>
+              <p className="stat-value">{stats.activeTrainers}</p>
+              <p className="text-muted" style={{ fontSize: '0.8rem' }}>On system</p>
+            </div>
+            <div className="stat-icon" style={{ background: 'rgba(6, 182, 212, 0.1)', color: 'var(--clr-secondary)' }}>
+              <UserSquare2 size={24} />
+            </div>
           </div>
-          <div className="stat-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: 'var(--clr-warning)' }}>
-            <CalendarCheck size={24} />
+        </div>
+
+        <div className="stat-card" style={{ position: 'relative', overflow: 'hidden' }}>
+          <div style={{ 
+            position: 'absolute', 
+            inset: 0, 
+            background: `linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(234, 179, 8, 0.08) 100%), url('https://images.unsplash.com/photo-1517836357463-d25ddfcbf042?w=600&h=400&fit=crop')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: 0.3
+          }} />
+          <div style={{ position: 'relative', zIndex: 2 }}>
+            <div className="stat-info">
+              <h3>Attendance Today</h3>
+              <p className="stat-value">{stats.attendanceToday}</p>
+              <p className="text-muted" style={{ fontSize: '0.8rem' }}>Check-ins today</p>
+            </div>
+            <div className="stat-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: 'var(--clr-warning)' }}>
+              <CalendarCheck size={24} />
+            </div>
           </div>
         </div>
       </div>

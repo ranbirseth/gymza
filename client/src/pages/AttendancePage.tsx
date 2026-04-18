@@ -71,12 +71,21 @@ const AttendancePage: React.FC = () => {
 
   return (
     <div>
-      <div className="page-header" style={{ marginBottom: '2rem' }}>
-        <div className="flex-responsive" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1.5rem' }}>
-          <div>
-            <h1>Attendance Tracking</h1>
-            <p className="text-muted">Monitor daily check-ins and member activity.</p>
-          </div>
+      <div className="page-header" style={{ marginBottom: '2rem', position: 'relative', overflow: 'hidden', borderRadius: '16px' }}>
+        {/* Attendance Banner Image */}
+        <div style={{ 
+          position: 'absolute', 
+          inset: 0, 
+          background: `linear-gradient(135deg, rgba(6, 182, 212, 0.7) 0%, rgba(245, 158, 11, 0.7) 100%), url('https://images.unsplash.com/photo-1517836357463-d25ddfcbf042?w=800&h=400&fit=crop')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }} />
+        <div style={{ position: 'relative', zIndex: 2 }}>
+          <div className="flex-responsive" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1.5rem' }}>
+            <div>
+              <h1 style={{ color: 'white', textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>Attendance Tracking</h1>
+              <p className="text-muted" style={{ color: 'rgba(255,255,255,0.9)' }}>Monitor daily check-ins and member activity.</p>
+            </div>
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
             <button className="btn btn-secondary" onClick={() => setIsQRModalOpen(true)}>
               <QrCode size={18} />
@@ -90,6 +99,7 @@ const AttendancePage: React.FC = () => {
               <Plus size={18} />
               Mark Attendance
             </button>
+          </div>
           </div>
         </div>
       </div>

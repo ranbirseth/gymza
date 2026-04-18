@@ -420,7 +420,7 @@ const MemberView: React.FC = () => {
           )}
 
           <div className="grid-cards" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))', gap: '1.5rem' }}>
-            <div className="glass-panel" style={{ padding: 'var(--sp-lg)', height: 'fit-content', minHeight: '300px' }}>
+            <div className="glass-panel" style={{ padding: 'var(--sp-lg)', height: 'fit-content', minHeight: '300px', background: `linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%), url('https://images.unsplash.com/photo-1534367789018-d5486a27ee86?w=500&h=300&fit=crop')`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundBlendMode: 'overlay' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div className="stat-icon" style={{ background: 'rgba(139, 92, 246, 0.1)', color: 'var(--clr-primary)', width: '40px', height: '40px', flexShrink: 0 }}>
                   <Dumbbell size={20} />
@@ -452,7 +452,7 @@ const MemberView: React.FC = () => {
               )}
             </div>
 
-            <div className="glass-panel" style={{ padding: 'var(--sp-lg)', height: 'fit-content', minHeight: '300px' }}>
+            <div className="glass-panel" style={{ padding: 'var(--sp-lg)', height: 'fit-content', minHeight: '300px', background: `linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(34, 197, 94, 0.1) 100%), url('https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=500&h=300&fit=crop')`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundBlendMode: 'overlay' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--clr-success)', width: '40px', height: '40px', flexShrink: 0 }}>
                   <Utensils size={20} />
