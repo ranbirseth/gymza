@@ -92,7 +92,7 @@ const MembersPage: React.FC = () => {
     try {
       await createMember(formData);
       setIsModalOpen(false);
-      setFormData({ name: '', email: '', phone: '', password: 'Password123', planId: '', branchCode: 'MAIN' });
+      setFormData({ name: '', email: '', phone: '', password: 'Password123', planId: '', trainerId: '', branchCode: 'MAIN' });
       fetchMembers();
     } catch (error: any) {
       alert(error.response?.data?.message || 'Failed to create member');
