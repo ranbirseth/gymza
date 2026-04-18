@@ -31,27 +31,81 @@ const MemberView: React.FC = () => {
     // We only set loading true on initial fetch or filter change, not on socket update
     // to avoid UI flickering
     try {
-      const [wRes, dRes, pRes, payRes, attRes, todayRes, statsRes] = await Promise.all([
+      const results = await Promise.allSettled([
         getMyWorkout(),
         getMyDiet(),
         getMyProfile(),
-        getPayments(),
+        getPayments().catch(err => {
+          console.error("Payment fetch error:", err);
+          return { data: { data: { items: [] } } };
+        }),
         getMyAttendance({ status: attendanceStatusFilter !== 'all' ? attendanceStatusFilter : undefined }),
         getTodayAttendanceStatus(),
         getMyAttendanceStats()
       ]);
 
-      setWorkout(wRes?.data?.data ?? null);
-      setDiet(dRes?.data?.data ?? null);
-      const profileData = pRes?.data?.data ?? null;
-      setProfile(profileData);
-      console.log("Member Dashboard Profile Data:", profileData);
-      setPayments(payRes?.data?.data?.items || []);
-      setAttendance(attRes?.data?.data?.items || []);
-      setTodayAttendance(todayRes?.data?.data ?? null);
-      setStats(statsRes?.data?.data ?? null);
+      // Handle each result individually to prevent one failure from breaking the entire dashboard
+      const wRes = results[0];
+      const dRes = results[1];
+      const pRes = results[2];
+      const payRes = results[3];
+      const attRes = results[4];
+      const todayRes = results[5];
+      const statsRes = results[6];
+
+      if (wRes.status === 'fulfilled') {
+        setWorkout(wRes.value?.data?.data ?? null);
+      } else {
+        console.error("Failed to fetch workout:", wRes.reason);
+        setWorkout(null);
+      }
+
+      if (dRes.status === 'fulfilled') {
+        setDiet(dRes.value?.data?.data ?? null);
+      } else {
+        console.error("Failed to fetch diet:", dRes.reason);
+        setDiet(null);
+      }
+
+      if (pRes.status === 'fulfilled') {
+        const profileData = pRes.value?.data?.data ?? null;
+        setProfile(profileData);
+        console.log("Member Dashboard Profile Data:", profileData);
+      } else {
+        console.error("Failed to fetch profile:", pRes.reason);
+        setProfile(null);
+      }
+
+      if (payRes.status === 'fulfilled') {
+        const paymentData = payRes.value?.data?.data?.items || payRes.value?.data?.data || [];
+        setPayments(Array.isArray(paymentData) ? paymentData : []);
+      } else {
+        console.error("Failed to fetch payments:", payRes.reason);
+        setPayments([]);
+      }
+
+      if (attRes.status === 'fulfilled') {
+        setAttendance(attRes.value?.data?.data?.items || []);
+      } else {
+        console.error("Failed to fetch attendance:", attRes.reason);
+        setAttendance([]);
+      }
+
+      if (todayRes.status === 'fulfilled') {
+        setTodayAttendance(todayRes.value?.data?.data ?? null);
+      } else {
+        console.error("Failed to fetch today attendance:", todayRes.reason);
+        setTodayAttendance(null);
+      }
+
+      if (statsRes.status === 'fulfilled') {
+        setStats(statsRes.value?.data?.data ?? null);
+      } else {
+        console.error("Failed to fetch stats:", statsRes.reason);
+        setStats(null);
+      }
     } catch (error) {
-      console.error("Failed to fetch member data", error);
+      console.error("Unexpected error in fetchData:", error);
     } finally {
       setLoading(false);
     }

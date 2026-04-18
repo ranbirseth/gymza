@@ -28,6 +28,10 @@ const deleteWorkoutPlan = asyncHandler(async (req, res) => {
 // Assignment
 const assignWorkoutToMember = asyncHandler(async (req, res) => {
   const { memberId, templateId, customPlan } = req.body;
+  if (!templateId && !customPlan) {
+    throw new AppError("Either templateId or customPlan must be provided", 400);
+  }
+  
   const member = await Member.findOne({ _id: memberId, gymId: req.gymId });
   if (!member) throw new AppError("Member not found", 404);
 
@@ -37,14 +41,16 @@ const assignWorkoutToMember = asyncHandler(async (req, res) => {
     if (!template) throw new AppError("Template not found", 404);
     
     // Create a copy for the member
+    const templateObj = template.toObject();
     workoutPlan = await WorkoutPlan.create({
-      ...template.toObject(),
-      _id: undefined,
+      gymId: req.gymId,
+      name: templateObj.name,
+      goal: templateObj.goal,
+      difficulty: templateObj.difficulty,
+      days: JSON.parse(JSON.stringify(templateObj.days)),
       isTemplate: false,
       assignedTo: memberId,
-      createdBy: req.user._id,
-      createdAt: undefined,
-      updatedAt: undefined
+      createdBy: req.user._id
     });
   } else if (customPlan) {
     workoutPlan = await WorkoutPlan.create({
@@ -56,9 +62,13 @@ const assignWorkoutToMember = asyncHandler(async (req, res) => {
     });
   }
 
+  if (!workoutPlan) throw new AppError("Failed to create workout plan", 500);
+  
   member.assignedWorkout = workoutPlan._id;
   await member.save();
-
+  
+  // Populate the created workout before sending response
+  await workoutPlan.populate("createdBy", "name email");
   sendResponse(res, { message: "Workout assigned successfully", data: workoutPlan });
 });
 

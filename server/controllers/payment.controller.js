@@ -76,6 +76,26 @@ const listPayments = asyncHandler(async (req, res) => {
   sendResponse(res, { message: "Payments fetched", data: { items, page, limit, total } });
 });
 
+const getMyPayments = asyncHandler(async (req, res) => {
+  const { skip, limit, page } = getPagination(req.query);
+  
+  // Get the member profile for the current user
+  const member = await Member.findOne({ user: req.user._id, gymId: req.gymId });
+  if (!member) throw Object.assign(new Error("Member profile not found"), { statusCode: 404 });
+  
+  const filter = { gymId: req.gymId, member: member._id };
+  const [items, total] = await Promise.all([
+    Payment.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate({ path: "member", populate: { path: "user", select: "name" } })
+      .populate("plan", "name"),
+    Payment.countDocuments(filter)
+  ]);
+  sendResponse(res, { message: "Payments fetched", data: { items, page, limit, total } });
+});
+
 const pendingDues = asyncHandler(async (req, res) => {
   const { skip, limit, page } = getPagination(req.query);
   const filter = { gymId: req.gymId, status: "pending" };
@@ -181,7 +201,8 @@ const markAsUnpaid = asyncHandler(async (req, res) => {
 
 module.exports = { 
   createPayment, 
-  listPayments, 
+  listPayments,
+  getMyPayments,
   pendingDues, 
   getInvoice, 
   createOnlinePaymentIntent, 

@@ -3,6 +3,7 @@ const { protect, authorize } = require("../middlewares/auth.middleware");
 const {
   createPayment,
   listPayments,
+  getMyPayments,
   pendingDues,
   getInvoice,
   createOnlinePaymentIntent,
@@ -12,6 +13,8 @@ const {
 } = require("../controllers/payment.controller");
 
 router.use(protect);
+// Member route - must come before admin routes to avoid conflicts
+router.get("/my-payments", authorize("member"), getMyPayments);
 router.get("/", authorize("admin", "trainer"), listPayments);
 router.get("/dues", authorize("admin", "trainer"), pendingDues);
 router.get("/:id/invoice", authorize("admin", "trainer", "member"), getInvoice);

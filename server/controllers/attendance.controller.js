@@ -84,7 +84,11 @@ const markAttendance = asyncHandler(async (req, res) => {
     }
 
     attendance.checkOut = new Date();
-    attendance.status = "completed";
+    // Only change status to "completed" if currently "present" (on-time)
+    // Preserve "late" status if member checked in late
+    if (attendance.status === "present") {
+      attendance.status = "completed";
+    }
     if (isAdminOrTrainer) {
       attendance.auditLogs.push({
         action: "manual_checkout",
@@ -201,7 +205,11 @@ const memberCheckOut = asyncHandler(async (req, res) => {
   const { latitude, longitude, accuracy } = req.body.location || {};
 
   attendance.checkOut = new Date();
-  attendance.status = "completed";
+  // Only change status to "completed" if currently "present" (on-time)
+  // Preserve "late" status if member checked in late
+  if (attendance.status === "present") {
+    attendance.status = "completed";
+  }
   attendance.location.checkOut = { latitude, longitude, accuracy };
   attendance.auditLogs.push({
     action: "check-out",

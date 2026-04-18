@@ -28,6 +28,10 @@ const deleteDietPlan = asyncHandler(async (req, res) => {
 // Assignment
 const assignDietToMember = asyncHandler(async (req, res) => {
   const { memberId, templateId, customPlan } = req.body;
+  if (!templateId && !customPlan) {
+    throw new AppError("Either templateId or customPlan must be provided", 400);
+  }
+  
   const member = await Member.findOne({ _id: memberId, gymId: req.gymId });
   if (!member) throw new AppError("Member not found", 404);
 
@@ -37,14 +41,16 @@ const assignDietToMember = asyncHandler(async (req, res) => {
     if (!template) throw new AppError("Template not found", 404);
     
     // Create a copy for the member
+    const templateObj = template.toObject();
     dietPlan = await DietPlan.create({
-      ...template.toObject(),
-      _id: undefined,
+      gymId: req.gymId,
+      name: templateObj.name,
+      goal: templateObj.goal,
+      calories: templateObj.calories,
+      meals: JSON.parse(JSON.stringify(templateObj.meals)),
       isTemplate: false,
       assignedTo: memberId,
-      createdBy: req.user._id,
-      createdAt: undefined,
-      updatedAt: undefined
+      createdBy: req.user._id
     });
   } else if (customPlan) {
     dietPlan = await DietPlan.create({
@@ -56,9 +62,13 @@ const assignDietToMember = asyncHandler(async (req, res) => {
     });
   }
 
+  if (!dietPlan) throw new AppError("Failed to create diet plan", 500);
+  
   member.assignedDiet = dietPlan._id;
   await member.save();
-
+  
+  // Populate the created diet before sending response
+  await dietPlan.populate("createdBy", "name email");
   sendResponse(res, { message: "Diet assigned successfully", data: dietPlan });
 });
 
