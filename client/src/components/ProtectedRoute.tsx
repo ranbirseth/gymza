@@ -19,7 +19,7 @@ export default function ProtectedRoute({ children, roles }: Props) {
     if (user.status === "pending") {
       return <Navigate to="/pending-approval" replace />;
     }
-    if (user.status === "expired" || user.status === "frozen" || user.status === "cancelled" || user.paymentStatus === "pending") {
+    if (user.status === "expired" || user.status === "frozen" || user.status === "cancelled") {
       return <Navigate to="/access-restricted" replace />;
     }
   }

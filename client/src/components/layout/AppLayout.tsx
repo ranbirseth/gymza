@@ -31,7 +31,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               navigate("/account-inactive");
             } else if (updatedStatus === "pending") {
               navigate("/pending-approval");
-            } else if (updatedStatus === "expired" || updatedStatus === "frozen" || updatedPaymentStatus === "pending") {
+            } else if (updatedStatus === "expired" || updatedStatus === "frozen") {
               navigate("/access-restricted");
             }
           }
@@ -51,7 +51,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     if (user.status === "inactive") {
       return <Navigate to="/account-inactive" replace />;
     }
-    if (user.status === "expired" || user.status === "frozen" || user.paymentStatus === "pending") {
+    if (user.status === "expired" || user.status === "frozen") {
       return <Navigate to="/access-restricted" replace />;
     }
   }

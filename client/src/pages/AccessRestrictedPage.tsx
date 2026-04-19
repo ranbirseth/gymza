@@ -14,8 +14,8 @@ export default function AccessRestrictedPage() {
       return;
     }
 
-    // If they are active and paid, send them to dashboard
-    if (user.status === "active" && user.paymentStatus === "paid") {
+    // If they are active, send them to dashboard
+    if (user.status === "active") {
       navigate("/");
       return;
     }
@@ -36,7 +36,7 @@ export default function AccessRestrictedPage() {
         const { data } = await getMyProfile();
         const updatedUser = data.data;
         if (updatedUser) {
-          const isNowActive = updatedUser.status === "active" && updatedUser.paymentStatus === "paid";
+          const isNowActive = updatedUser.status === "active";
           if (isNowActive) {
             setUser({ ...user, status: updatedUser.status, paymentStatus: updatedUser.paymentStatus });
             navigate("/");
@@ -56,7 +56,6 @@ export default function AccessRestrictedPage() {
   };
 
   const isExpired = user?.status === "expired";
-  const isPaymentPending = user?.paymentStatus === "pending";
 
   return (
     <div className="login-page" style={{ 
@@ -101,7 +100,11 @@ export default function AccessRestrictedPage() {
         <p className="text-muted" style={{ fontSize: '1.1rem', lineHeight: '1.6', marginBottom: '2rem' }}>
           Hello <strong>{user?.name}</strong>! {isExpired 
             ? "Your gym membership has expired. Please renew your plan to continue using the gym facilities." 
-            : "Your payment is currently pending. Access to the dashboard is restricted until the administrator confirms your payment."}
+            : user?.status === "frozen" 
+              ? "Your account has been frozen. Please contact the administrator to reactivate your membership."
+              : user?.status === "cancelled"
+                ? "Your membership has been cancelled. Please contact the gym to restart your plan."
+                : "Access to the dashboard is currently restricted. Please contact the administrator for more details."}
         </p>
 
         <div style={{ 
