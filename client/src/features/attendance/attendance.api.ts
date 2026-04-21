@@ -48,8 +48,10 @@ export const exportMyAttendance = (
 
 export const markAttendance = (data: {
   secretCode: string;
-  action?: "check-in" | "check-out";
+  action: "check-in" | "check-out";
+  memberId?: string;
   location?: { latitude: number; longitude: number; accuracy: number };
+  timezone?: string;
 }) => http.post("/attendance/mark", data);
 
 export const getAttendance = (

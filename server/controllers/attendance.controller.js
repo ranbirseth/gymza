@@ -12,12 +12,8 @@ const LATE_THRESHOLD_HOUR = 9;
 
 const getTodayDate = () => new Date().toISOString().split("T")[0];
 
-const GYM_LATITUDE = parseFloat(process.env.GYM_LATITUDE) || 0;
-const GYM_LONGITUDE = parseFloat(process.env.GYM_LONGITUDE) || 0;
-const GYM_LOCATION_RADIUS_METERS = parseFloat(process.env.GYM_LOCATION_RADIUS_METERS) || 100;
-
 function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371e3;
+  const R = 6371e3; // Earth radius in meters
   const φ1 = (lat1 * Math.PI) / 180;
   const φ2 = (lat2 * Math.PI) / 180;
   const Δφ = ((lat2 - lat1) * Math.PI) / 180;
@@ -30,19 +26,29 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 }
 
 function validateGeofence(latitude, longitude) {
+  const gymLat = parseFloat(process.env.GYM_LATITUDE);
+  const gymLon = parseFloat(process.env.GYM_LONGITUDE);
+  const radius = parseFloat(process.env.GYM_LOCATION_RADIUS_METERS) || 100;
+
+  console.log(`[Geofence Debug] Member Loc: ${latitude}, ${longitude} | Gym Loc: ${gymLat}, ${gymLon} | Allowed Radius: ${radius}m`);
+
   if (!latitude || !longitude) {
     return { valid: false, distance: null, message: "Location access is required for check-in. Please enable location services." };
   }
-  if (!GYM_LATITUDE || !GYM_LONGITUDE || GYM_LATITUDE === 0 || GYM_LONGITUDE === 0) {
+
+  if (!gymLat || !gymLon || gymLat === 0 || gymLon === 0) {
     console.error("[GEOFENCE CONFIG ERROR] Gym location is not properly configured! Set GYM_LATITUDE and GYM_LONGITUDE in environment variables.");
     return { valid: false, distance: null, message: "Gym location is not configured. Please contact the administrator." };
   }
-  const distance = calculateDistance(latitude, longitude, GYM_LATITUDE, GYM_LONGITUDE);
-  if (distance > GYM_LOCATION_RADIUS_METERS) {
+
+  const distance = calculateDistance(latitude, longitude, gymLat, gymLon);
+  console.log(`[Geofence Debug] Calculated Distance: ${Math.round(distance)}m`);
+
+  if (distance > radius) {
     return {
       valid: false,
       distance: Math.round(distance),
-      message: `You are ${Math.round(distance)}m away from the gym (Your location: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}). Check-in is only allowed within ${GYM_LOCATION_RADIUS_METERS}m.`
+      message: `You are ${Math.round(distance)}m away from the gym (Your location: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}). Check-in is only allowed within ${radius}m.`
     };
   }
   return { valid: true, distance: Math.round(distance), message: "Within gym radius" };
@@ -54,7 +60,7 @@ function validateGeofence(latitude, longitude) {
  * @access  Public (Secret Code) OR Private (Admin/Trainer with memberId)
  */
 const markAttendance = asyncHandler(async (req, res) => {
-  const { secretCode, memberId, action } = req.body;
+  const { secretCode, memberId, action, location } = req.body;
   const isAdminOrTrainer = req.user && ["admin", "superadmin", "trainer"].includes(req.user.role);
 
   let member;
@@ -65,6 +71,14 @@ const markAttendance = asyncHandler(async (req, res) => {
     if (!secretCode) throw new AppError("Secret code is required for self check-in", 400);
     member = await Member.findOne({ secretCode }).populate("user");
     if (!member) throw new AppError("Invalid secret code", 404);
+
+    // Enforce geofencing for self check-in (Secret Code/QR)
+    const { latitude, longitude, accuracy } = location || {};
+    const geoValidation = validateGeofence(latitude, longitude);
+    if (!geoValidation.valid) {
+      console.log(`[Geofence Rejected] Member: ${member.user.name} (Secret Code) attempted ${action} from ${geoValidation.distance}m away.`);
+      throw new AppError(geoValidation.message, 400);
+    }
   }
 
   const today = getTodayDate();
@@ -87,13 +101,20 @@ const markAttendance = asyncHandler(async (req, res) => {
       date: today,
       checkIn: serverTime,
       status: isLate ? "late" : "present",
+      location: location ? { checkIn: location } : undefined,
       auditLogs: isAdminOrTrainer ? [{
         action: "manual_checkin",
         performedBy: req.user._id,
         timestamp: new Date(),
         details: "Manual check-in by admin/trainer",
         ipAddress: req.ip
-      }] : []
+      }] : [{
+        action: "check-in",
+        performedBy: member.user._id,
+        timestamp: serverTime,
+        details: "Self check-in via secret code",
+        ipAddress: req.ip
+      }]
     });
 
     await Attendance.cacheAttendanceStatus(gymId, member._id.toString(), attendance);
@@ -120,6 +141,10 @@ const markAttendance = asyncHandler(async (req, res) => {
     }
 
     attendance.checkOut = new Date();
+    if (location) {
+      attendance.location = { ...attendance.location, checkOut: location };
+    }
+
     // Only change status to "completed" if currently "present" (on-time)
     // Preserve "late" status if member checked in late
     if (attendance.status === "present") {
@@ -131,6 +156,14 @@ const markAttendance = asyncHandler(async (req, res) => {
         performedBy: req.user._id,
         timestamp: new Date(),
         details: "Manual check-out by admin/trainer",
+        ipAddress: req.ip
+      });
+    } else {
+      attendance.auditLogs.push({
+        action: "check-out",
+        performedBy: member.user._id,
+        timestamp: new Date(),
+        details: "Self check-out via secret code",
         ipAddress: req.ip
       });
     }

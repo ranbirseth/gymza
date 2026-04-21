@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dumbbell, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { Dumbbell, CheckCircle2, AlertCircle, Loader2, MapPin } from 'lucide-react';
 import { markAttendance } from '../features/attendance/attendance.api';
 
 const QRAttendancePage: React.FC = () => {
@@ -8,11 +8,30 @@ const QRAttendancePage: React.FC = () => {
     type: 'idle',
     message: ''
   });
+  const [location, setLocation] = useState<{ latitude: number; longitude: number; accuracy: number } | null>(null);
 
   // Ensure theme is applied (defaulting to dark for this standalone-ish page)
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', 'dark');
   }, []);
+
+  const getLocation = (): Promise<{ latitude: number; longitude: number; accuracy: number } | null> => {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        resolve(null);
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const loc = { latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy };
+          setLocation(loc);
+          resolve(loc);
+        },
+        () => resolve(null),
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
+    });
+  };
 
   const handleAction = async (action: 'check-in' | 'check-out') => {
     if (secretCode.length !== 3 || !/^\d+$/.test(secretCode)) {
@@ -20,10 +39,15 @@ const QRAttendancePage: React.FC = () => {
       return;
     }
 
-    setStatus({ type: 'loading', message: `Processing ${action}...` });
+    setStatus({ type: 'loading', message: `Verifying location and processing ${action}...` });
 
     try {
-      const response = await markAttendance({ secretCode, action });
+      const currentLoc = await getLocation();
+      const response = await markAttendance({ 
+        secretCode, 
+        action,
+        location: currentLoc || undefined 
+      });
       const data = response.data;
 
       if (response.status === 200 || response.status === 201) {
@@ -35,7 +59,7 @@ const QRAttendancePage: React.FC = () => {
         setStatus({ type: 'error', message: data.message || 'Failed to mark attendance.' });
       }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to mark attendance. Please check your code.';
+      const errorMessage = error.response?.data?.message || 'Failed to mark attendance. Please check your code and location.';
       setStatus({ type: 'error', message: errorMessage });
     }
   };
