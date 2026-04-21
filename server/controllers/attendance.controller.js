@@ -12,6 +12,38 @@ const LATE_THRESHOLD_HOUR = 9;
 
 const getTodayDate = () => new Date().toISOString().split("T")[0];
 
+const GYM_LATITUDE = parseFloat(process.env.GYM_LATITUDE) || 0;
+const GYM_LONGITUDE = parseFloat(process.env.GYM_LONGITUDE) || 0;
+const GYM_LOCATION_RADIUS_METERS = parseFloat(process.env.GYM_LOCATION_RADIUS_METERS) || 100;
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371e3;
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function validateGeofence(latitude, longitude) {
+  if (!latitude || !longitude || !GYM_LATITUDE || !GYM_LONGITUDE) {
+    return { valid: true, distance: null, message: "Location not configured, skipping validation" };
+  }
+  const distance = calculateDistance(latitude, longitude, GYM_LATITUDE, GYM_LONGITUDE);
+  if (distance > GYM_LOCATION_RADIUS_METERS) {
+    return {
+      valid: false,
+      distance: Math.round(distance),
+      message: `You are ${Math.round(distance)}m away from the gym. Check-in is only allowed within ${GYM_LOCATION_RADIUS_METERS}m of the gym.`
+    };
+  }
+  return { valid: true, distance: Math.round(distance), message: "Within gym radius" };
+}
+
 /**
  * @desc    Mark attendance (check-in or check-out)
  * @route   POST /api/attendance/mark
@@ -145,6 +177,11 @@ const memberCheckIn = asyncHandler(async (req, res) => {
   const checkInHour = serverTime.getHours();
   const isLate = checkInHour >= LATE_THRESHOLD_HOUR;
 
+  const geoValidation = validateGeofence(latitude, longitude);
+  if (!geoValidation.valid) {
+    throw new AppError(geoValidation.message, 400);
+  }
+
   const attendance = await Attendance.create({
     gymId: req.gymId,
     member: member._id,
@@ -203,6 +240,11 @@ const memberCheckOut = asyncHandler(async (req, res) => {
   }
 
   const { latitude, longitude, accuracy } = req.body.location || {};
+
+  const geoValidation = validateGeofence(latitude, longitude);
+  if (!geoValidation.valid) {
+    throw new AppError(geoValidation.message, 400);
+  }
 
   attendance.checkOut = new Date();
   // Only change status to "completed" if currently "present" (on-time)
