@@ -226,6 +226,8 @@ const MemberAttendancePage: React.FC = () => {
       const geoLocation = await getLocation();
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+      console.log("Attempting check-in with location:", geoLocation);
+
       await memberCheckIn({
         location: geoLocation || undefined,
         timezone,
@@ -236,6 +238,7 @@ const MemberAttendancePage: React.FC = () => {
       fetchStats();
       fetchHistory();
     } catch (error: any) {
+      console.error("Check-in error:", error.response?.data);
       const message = error.response?.data?.message || "Check-in failed";
       toast.error(message);
     } finally {
@@ -257,6 +260,7 @@ const MemberAttendancePage: React.FC = () => {
       fetchStats();
       fetchHistory();
     } catch (error: any) {
+      console.error("Check-out error:", error.response?.data);
       const message = error.response?.data?.message || "Check-out failed";
       toast.error(message);
     } finally {

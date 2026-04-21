@@ -38,7 +38,7 @@ function validateGeofence(latitude, longitude) {
     return {
       valid: false,
       distance: Math.round(distance),
-      message: `You are ${Math.round(distance)}m away from the gym. Check-in is only allowed within ${GYM_LOCATION_RADIUS_METERS}m of the gym.`
+      message: `You are ${Math.round(distance)}m away from the gym (Your location: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}). Check-in is only allowed within ${GYM_LOCATION_RADIUS_METERS}m.`
     };
   }
   return { valid: true, distance: Math.round(distance), message: "Within gym radius" };
@@ -179,6 +179,7 @@ const memberCheckIn = asyncHandler(async (req, res) => {
 
   const geoValidation = validateGeofence(latitude, longitude);
   if (!geoValidation.valid) {
+    console.log(`[Geofence Rejected] Member: ${req.user.name} attempted check-in from ${geoValidation.distance}m away.`);
     throw new AppError(geoValidation.message, 400);
   }
 
@@ -243,6 +244,7 @@ const memberCheckOut = asyncHandler(async (req, res) => {
 
   const geoValidation = validateGeofence(latitude, longitude);
   if (!geoValidation.valid) {
+    console.log(`[Geofence Rejected] Member: ${req.user.name} attempted check-out from ${geoValidation.distance}m away.`);
     throw new AppError(geoValidation.message, 400);
   }
 

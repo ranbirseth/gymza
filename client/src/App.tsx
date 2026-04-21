@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Suspense, lazy } from "react";
+import { Toaster } from "react-hot-toast";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppLayout from "./components/layout/AppLayout";
 import { useAuthStore } from "./store/auth.store";
@@ -39,6 +40,7 @@ function App() {
         v7_relativeSplatPath: true 
       }}
     >
+      <Toaster position="top-center" reverseOrder={false} />
       <Suspense fallback={<div className="loading-screen" style={{ 
         height: '100vh', 
         width: '100vw', 
