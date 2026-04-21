@@ -5,9 +5,13 @@ type User = {
   _id: string; 
   name: string; 
   email: string; 
+  phone?: string;
+  photo?: string;
+  address?: string;
+  emergencyContact?: string;
   role: "superadmin" | "admin" | "trainer" | "member";
-  status: "active" | "pending" | "inactive" | "expired" | "cancelled" | "frozen";
-  paymentStatus: "paid" | "pending";
+  status?: "active" | "pending" | "inactive" | "expired" | "cancelled" | "frozen";
+  paymentStatus?: "paid" | "pending";
 } | null;
 
 type AuthState = {

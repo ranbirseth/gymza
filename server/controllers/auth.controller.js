@@ -21,9 +21,46 @@ const sanitizeUser = (user, member = null) => ({
   phone: user.phone,
   role: user.role,
   photo: user.photo,
+  address: user.address,
+  emergencyContact: user.emergencyContact,
   status: member ? member.status : user.status,
   paymentStatus: member ? member.paymentStatus : "paid", // Admins/Trainers are always "paid"
   secretCode: member ? member.secretCode : undefined
+});
+
+const updateProfile = asyncHandler(async (req, res) => {
+  const { name, email, phone, password, photo, address, emergencyContact } = req.body;
+  const userId = req.user.sub;
+
+  const user = await User.findById(userId);
+  if (!user) throw new AppError("User not found", 404);
+
+  // Check if email is being changed and if it's already taken
+  if (email && email !== user.email) {
+    const existingUser = await User.findOne({ email, gymId: user.gymId });
+    if (existingUser) throw new AppError("Email already in use", 400);
+    user.email = email;
+  }
+
+  if (name) user.name = name;
+  if (phone) user.phone = phone;
+  if (password) user.password = password;
+  if (photo) user.photo = photo;
+  if (address !== undefined) user.address = address;
+  if (emergencyContact !== undefined) user.emergencyContact = emergencyContact;
+
+  await user.save();
+
+  // If user is a member, fetch their member details for sanitization
+  let member = null;
+  if (user.role === "member") {
+    member = await Member.findOne({ user: user._id });
+  }
+
+  sendResponse(res, { 
+    message: "Profile updated successfully", 
+    data: sanitizeUser(user, member) 
+  });
 });
 
 const Member = require("../models/member.model");
@@ -208,4 +245,4 @@ const resetPassword = asyncHandler(async (req, res) => {
   sendResponse(res, { message: "Password reset successful" });
 });
 
-module.exports = { signup, login, refresh, logout, forgotPassword, resetPassword };
+module.exports = { signup, login, refresh, logout, forgotPassword, resetPassword, updateProfile };

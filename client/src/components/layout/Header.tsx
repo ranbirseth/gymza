@@ -50,7 +50,11 @@ const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, toggleSidebar }) =>
             aria-label="Account Settings"
           >
             <div className="avatar-sm">
-              {user?.name?.charAt(0) || 'U'}
+              {user?.photo ? (
+                <img src={user.photo} alt={user.name || "User"} className="avatar-img" />
+              ) : (
+                user?.name?.charAt(0) || 'U'
+              )}
             </div>
             <Bell size={18} className="bell-icon" />
           </button>
