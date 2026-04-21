@@ -30,8 +30,12 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 }
 
 function validateGeofence(latitude, longitude) {
-  if (!latitude || !longitude || !GYM_LATITUDE || !GYM_LONGITUDE) {
-    return { valid: true, distance: null, message: "Location not configured, skipping validation" };
+  if (!latitude || !longitude) {
+    return { valid: false, distance: null, message: "Location access is required for check-in. Please enable location services." };
+  }
+  if (!GYM_LATITUDE || !GYM_LONGITUDE || GYM_LATITUDE === 0 || GYM_LONGITUDE === 0) {
+    console.error("[GEOFENCE CONFIG ERROR] Gym location is not properly configured! Set GYM_LATITUDE and GYM_LONGITUDE in environment variables.");
+    return { valid: false, distance: null, message: "Gym location is not configured. Please contact the administrator." };
   }
   const distance = calculateDistance(latitude, longitude, GYM_LATITUDE, GYM_LONGITUDE);
   if (distance > GYM_LOCATION_RADIUS_METERS) {
