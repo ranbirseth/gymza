@@ -8,7 +8,7 @@ const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
 const rateLimit = require("express-rate-limit");
 const { Server } = require("socket.io");
-const { connectDb } = require("./config/db");
+const { connectDb, isDbConnected } = require("./config/db");
 const { asyncHandler } = require("./utils/asyncHandler");
 const { seedData } = require("./seeds/seedLogic");
 const { connectRedis } = require("./config/redis");
@@ -61,12 +61,26 @@ app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 300 }));
 
 // API Routes
 app.get("/api/health", asyncHandler(async (_req, res) => {
+  if (!isDbConnected()) {
+    return res.json({
+      success: true,
+      message: "Server healthy, but the database is currently unavailable.",
+      data: {
+        dbReady: false,
+        totalUsers: 0,
+        adminExists: false,
+        gymId: "MAIN"
+      }
+    });
+  }
+
   const userCount = await User.countDocuments();
   const admin = await User.findOne({ email: "admin@gymza.com", gymId: "MAIN" });
   res.json({ 
     success: true, 
     message: "Server healthy", 
     data: { 
+      dbReady: true,
       totalUsers: userCount, 
       adminExists: !!admin,
       gymId: "MAIN"
@@ -119,23 +133,44 @@ io.on("connection", (socket) => {
 
 app.use(errorHandler);
 
+const startServer = (port, attempt = 1) => {
+  server.once("error", (error) => {
+    if (error.code === "EADDRINUSE" && attempt < 5) {
+      const nextPort = port + 1;
+      console.warn(`Port ${port} is busy. Trying ${nextPort}...`);
+      startServer(nextPort, attempt + 1);
+      return;
+    }
+
+    console.error("Critical server startup error:", error.message);
+    process.exit(1);
+  });
+
+  server.listen(port, () => console.log(`Server running on :${port}`));
+};
+
 const start = async () => {
   try {
     console.log("Environment:", process.env.NODE_ENV || "development");
     console.log("RENDER environment variable:", process.env.RENDER || "false");
     
-    await connectDb();
-    console.log("Database connection successful");
-    
-    // Auto-seed if database is empty
-    await seedData();
+    const dbReady = await connectDb();
+    app.locals.dbReady = dbReady;
+
+    if (dbReady) {
+      console.log("Database connection successful");
+      // Auto-seed if database is empty
+      await seedData();
+    } else {
+      console.warn("Continuing without database for local development. API routes that depend on MongoDB will return errors until the database is available.");
+    }
     
     connectRedis();
     configureCloudinary();
     startExpiryReminderJob();
     
-    const port = process.env.PORT || 5000;
-    server.listen(port, () => console.log(`Server running on :${port}`));
+    const port = Number(process.env.PORT || 5000);
+    startServer(port);
   } catch (error) {
     console.error("Critical server startup error:", error.message);
     // Log more details if it's a DNS issue
