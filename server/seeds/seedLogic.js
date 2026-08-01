@@ -8,32 +8,25 @@ const mongoose = require("mongoose");
 
 const seedData = async () => {
   const gymId = "MAIN";
-  
-  // Clear all data from collections
-  console.log("Clearing database...");
-  try {
-    await Promise.all([
-      User.deleteMany({}),
-      Plan.deleteMany({}),
-      Member.deleteMany({}),
-      WorkoutPlan.deleteMany({}),
-      DietPlan.deleteMany({}),
-      Payment.deleteMany({})
-    ]);
-    console.log("Database cleared successfully.");
-  } catch (error) {
-    console.error("Error clearing database:", error.message);
+  const userCount = await User.countDocuments();
+  const adminExists = await User.exists({ gymId, email: "admin@gymza.com" });
+
+  if (userCount > 0 || adminExists) {
+    console.log("Database already seeded. Skipping seed...");
+    return;
   }
-  
+
+  console.log("Database empty. Creating default data...");
+
   // Seed admin
   console.log("Creating admin...");
-  const admin = await User.create({ 
-    gymId, 
-    name: "Admin User", 
-    email: "admin@gymza.com", 
-    password: "Password123", 
-    role: "admin", 
-    phone: "1111111111" 
+  const admin = await User.create({
+    gymId,
+    name: "Admin User",
+    email: "admin@gymza.com",
+    password: "Password123",
+    role: "admin",
+    phone: "1111111111"
   });
 
   // Seed trainers
