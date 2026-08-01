@@ -12,6 +12,7 @@
     "install-all": "npm install && npm install --prefix client && npm install --prefix server"
   },
   "dependencies": {
+    "@mermaid-js/mermaid-cli": "^11.16.0",
     "concurrently": "^8.2.2"
   }
 }
