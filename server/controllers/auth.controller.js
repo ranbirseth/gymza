@@ -66,18 +66,21 @@ const updateProfile = asyncHandler(async (req, res) => {
 const Member = require("../models/member.model");
 
 const signup = asyncHandler(async (req, res) => {
-  const { gymId, name, email, phone, password, role = "member" } = req.body;
-  
-  // Ensure role is valid
-  const allowedRoles = ["admin", "trainer", "member"];
-  const finalRole = allowedRoles.includes(role) ? role : "member";
+  const { gymId, name, email, phone, password } = req.body;
 
-  const user = await User.create({ gymId, name, email, phone, password, role: finalRole });
+  const user = await User.create({
+    gymId,
+    name,
+    email,
+    phone,
+    password,
+    role: "member",
+    status: "pending"
+  });
   
   let member = null;
-  // If signing up as a member, also create the Member profile with pending status
-  if (finalRole === "member") {
-    // Generate unique secret code for the new member
+  // Create the Member profile with pending status for all signups
+  const secretCodeGenerator = async () => {
     let secretCode;
     let exists = true;
     while (exists) {
@@ -85,16 +88,20 @@ const signup = asyncHandler(async (req, res) => {
       const existing = await Member.findOne({ secretCode });
       if (!existing) exists = false;
     }
+    return secretCode;
+  };
 
-    member = await Member.create({
-      gymId,
-      user: user._id,
-      branchCode: "MAIN",
-      isActivePlan: false,
-      status: "pending",
-      secretCode
-    });
-  }
+  const secretCode = await secretCodeGenerator();
+
+  member = await Member.create({
+    gymId,
+    user: user._id,
+    branchCode: "MAIN",
+    isActivePlan: false,
+    status: "pending",
+    paymentStatus: "pending",
+    secretCode
+  });
 
   const tokens = toTokens(user);
   user.refreshTokens.push(tokens.refreshToken);
@@ -129,8 +136,11 @@ const login = asyncHandler(async (req, res) => {
   // If user is a member, check approval status
   if (user.role === "member") {
     member = await Member.findOne({ user: user._id });
-    if (member && member.status === "inactive") {
-      throw new AppError("Your account is inactive. Please contact admin.", 403, "ACCOUNT_INACTIVE");
+    if (member && member.status !== "active") {
+      const message = member.status === "pending"
+        ? "Your account is pending approval. Please wait for admin approval."
+        : "Your account is inactive. Please contact admin.";
+      throw new AppError(message, 403, "ACCOUNT_INACTIVE");
     }
   }
 
