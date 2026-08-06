@@ -33,7 +33,7 @@ const animationStyles = `
   @media (max-width: 1023px) {
     .login-page {
       background-image: linear-gradient(135deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.3) 100%), 
-                        url('https://res.cloudinary.com/dyc33dchn/image/upload/q_auto/f_auto/v1776476678/WhatsApp_Image_2026-04-15_at_10.11.01_PM_hlftny.jpg') !important;
+                        url('https://m.gettywallpapers.com/wp-content/uploads/2022/07/Gym-Exercise-Wallpaper.jpg') !important;
       background-size: cover !important;
       background-position: center !important;
       background-attachment: fixed !important;
@@ -43,7 +43,7 @@ const animationStyles = `
 
     html .login-page {
       background: linear-gradient(135deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.3) 100%), 
-                  url('https://res.cloudinary.com/dyc33dchn/image/upload/q_auto/f_auto/v1776476678/WhatsApp_Image_2026-04-15_at_10.11.01_PM_hlftny.jpg') !important;
+                  url('https://m.gettywallpapers.com/wp-content/uploads/2022/07/Gym-Exercise-Wallpaper.jpg') !important;
       background-size: cover !important;
       background-position: center !important;
       background-attachment: fixed !important;
@@ -244,8 +244,8 @@ export default function LoginPage() {
         <div className="glass-card" style={{ padding: '3rem' }}>
           <div className="login-welcome text-center" style={{ marginBottom: '2.5rem' }}>
             <img 
-              src="https://res.cloudinary.com/dyc33dchn/image/upload/q_auto/f_auto/v1776476678/WhatsApp_Image_2026-04-15_at_10.11.03_PM_2_jvuq84.jpg" 
-              alt="RUDRA FITNESS" 
+              src="https://tse1.mm.bing.net/th/id/OIP.hmEHzaVMAM7x3A-9-rEAiwHaHa?r=0&pid=Api&h=220&P=0" 
+              alt="A1 FITNESS" 
               style={{ 
                 width: '80px',
                 height: '80px',
