@@ -8,7 +8,7 @@ async function createAdmin() {
     await mongoose.connect(process.env.MONGO_URI);
 
     const exists = await User.findOne({
-      email: "shivadas01635@gmail.com",
+      email: "A1Fitness@gmail.com",
     });
 
     if (exists) {
@@ -18,10 +18,10 @@ async function createAdmin() {
 
     await User.create({
       gymId: "MAIN",
-      name: "Rudra Fitness Admin",
-      email: "shivadas01635@gmail.com",
-      password: "rudra2026", // Your model should hash this automatically
-      phone: "9999999999",
+      name: "A1Fitness",
+      email: "A1Fitness@gmail.com",
+      password: "A1fitness1234", // Your model should hash this automatically
+      phone: "7455768798",
       role: "admin",
       status: "active",
     });
